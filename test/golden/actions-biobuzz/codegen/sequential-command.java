@@ -1,0 +1,145 @@
+package org.firstinspires.ftc.teamcode;
+
+import static com.pedropathing.api.Paths.*;
+import com.pedropathing.api.Paths;
+
+import com.pedropathing.api.PoseFactory;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
+import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.Scheduler;
+import static com.pedropathing.ivy.Scheduler.schedule;
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.sequential;
+import static com.pedropathing.ivy.pedro.PedroCommands.follow;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
+
+@Autonomous(name = "Auto", group = "Autonomous")
+public class Auto extends LinearOpMode {
+
+    private Follower follower;
+    private DcMotorEx launch1, launch2, intake, ballmove;
+
+    private final PoseFactory poseFactory = PoseFactory.degrees();
+
+    private final Pose start = poseFactory.of(86.27, 8, 90);
+    private final Pose path1 = poseFactory.of(85.82, 13.22, 70);
+    private final Pose path2Start = poseFactory.of(85.82, 13.22, 70);
+    private final Pose path2 = poseFactory.of(97.34, 34.4, 0);
+    private final Pose path3Start = poseFactory.of(97.34, 34.4, 0);
+    private final Pose path3 = poseFactory.of(124, 34.4, 0);
+    private final Pose path4Start = poseFactory.of(124, 34.4, 0);
+    private final Pose path4 = poseFactory.of(85.82, 13.22, 70);
+    private final Pose path5Start = poseFactory.of(85.82, 13.22, 70);
+    private final Pose path5 = poseFactory.of(90.97, 19.1, 90);
+
+    // Autonomous routine
+    public Command autoRoutine() {
+        return sequential(
+            follow(follower, path1()),
+            sequential(
+                instant(() -> {
+                    launch1.setVelocity(1600);
+                    launch2.setVelocity(-1600);
+                }),
+                waitMs(1500),
+                instant(() -> {
+                    intake.setPower(1);
+                    ballmove.setPower(0.78);
+                }),
+                waitMs(2500),
+                instant(() -> {
+                    launch1.setVelocity(0);
+                    launch2.setVelocity(0);
+                    intake.setPower(0);
+                    ballmove.setPower(0);
+                })
+            ),
+            follow(follower, path2()),
+            instant(() -> {
+                intake.setPower(1);
+                ballmove.setPower(0.1);
+            }),
+            follow(follower, path3()),
+            instant(() -> {
+                intake.setPower(0);
+                ballmove.setPower(0);
+            }),
+            follow(follower, path4()),
+            sequential(
+                instant(() -> {
+                    launch1.setVelocity(1600);
+                    launch2.setVelocity(-1600);
+                }),
+                waitMs(1500),
+                instant(() -> {
+                    intake.setPower(1);
+                    ballmove.setPower(0.78);
+                }),
+                waitMs(2500),
+                instant(() -> {
+                    launch1.setVelocity(0);
+                    launch2.setVelocity(0);
+                    intake.setPower(0);
+                    ballmove.setPower(0);
+                })
+            ),
+            follow(follower, path5())
+        );
+    }
+
+    @Override
+    public void runOpMode() {
+        Scheduler.reset();
+        follower = Constants.create(hardwareMap);
+        launch1 = hardwareMap.get(DcMotorEx.class, "launch");
+        launch2 = hardwareMap.get(DcMotorEx.class, "launch2");
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        ballmove = hardwareMap.get(DcMotorEx.class, "ballmove");
+        follower.setPose(start);
+        follower.update();
+
+        waitForStart();
+        schedule(autoRoutine());
+
+        while (opModeIsActive()) {
+            follower.update();
+            Scheduler.execute();
+
+            telemetry.addData("x", follower.pose().x());
+            telemetry.addData("y", follower.pose().y());
+            telemetry.addData("heading", follower.pose().heading());
+
+            if (follower.currentPath() != null) {
+                telemetry.addData("Current path distance remaining", follower.distanceToEndpoint());
+                telemetry.addData("Path number", follower.pathIndex());
+            }
+
+            telemetry.update();
+        }
+    }
+
+    public Path path1() {
+        return Paths.line(start, path1).linear(start, path1);
+    }
+
+    public Path path2() {
+        return Paths.line(path2Start, path2).linear(path2Start, path2);
+    }
+
+    public Path path3() {
+        return Paths.line(path3Start, path3).linear(path3Start, path3);
+    }
+
+    public Path path4() {
+        return Paths.line(path4Start, path4).linear(path4Start, path4);
+    }
+
+    public Path path5() {
+        return Paths.line(path5Start, path5).linear(path5Start, path5);
+    }
+}

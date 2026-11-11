@@ -1,0 +1,48 @@
+{
+  "totalTime": 6.156346259462162,
+  "segmentTimes": [
+    0.647417061747251,
+    1.3888188333574865,
+    1.4604109010822948,
+    1.868930187132661,
+    0.7907692761424687
+  ],
+  "totalDistance": 107.48728370245625,
+  "timeline": [
+    {
+      "type": "travel",
+      "duration": 0.647417061747251,
+      "startTime": 0,
+      "endTime": 0.647417061747251,
+      "lineId": "line-1"
+    },
+    {
+      "type": "travel",
+      "duration": 1.3888188333574865,
+      "startTime": 0.647417061747251,
+      "endTime": 2.0362358951047375,
+      "lineId": "line-2"
+    },
+    {
+      "type": "travel",
+      "duration": 1.4604109010822948,
+      "startTime": 2.0362358951047375,
+      "endTime": 3.496646796187032,
+      "lineId": "line-3"
+    },
+    {
+      "type": "travel",
+      "duration": 1.868930187132661,
+      "startTime": 3.496646796187032,
+      "endTime": 5.365576983319693,
+      "lineId": "line-4"
+    },
+    {
+      "type": "travel",
+      "duration": 0.7907692761424687,
+      "startTime": 5.365576983319693,
+      "endTime": 6.156346259462162,
+      "lineId": "line-5"
+    }
+  ]
+}

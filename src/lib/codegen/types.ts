@@ -1,3 +1,5 @@
+import type { HardwareCode } from "../../types";
+
 export type ExportMode = "full" | "class" | "coordinates";
 
 export interface ExportOptions {
@@ -67,4 +69,6 @@ export interface ExportModel {
   sequence: SequenceStep[];
   warnings: string[];
   usesInterpolator: boolean;
+  /** Pasted into the full OpMode; absent or empty blocks emit nothing. */
+  hardware?: HardwareCode;
 }

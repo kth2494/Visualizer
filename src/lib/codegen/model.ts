@@ -1,4 +1,12 @@
-import type { AtomicPath, Path, SequenceItem, StartPose } from "../../types";
+import type {
+  ActionDef,
+  AtomicPath,
+  HardwareCode,
+  Path,
+  SequenceItem,
+  StartPose,
+} from "../../types";
+import { instantExpression, timedExpression } from "./actions";
 import { curveOf, type Curve } from "../../model/curve";
 import { atomicSegments } from "../../utils/pathTraversal";
 import {
@@ -24,7 +32,12 @@ export interface BuildModelInput {
   mirrorHorizontally?: boolean;
   className?: string | null;
   packageName?: string;
+  actions?: ActionDef[];
+  hardware?: HardwareCode;
 }
+
+/** Steps sit inside `sequential(` at this depth in the emitted routine. */
+const STEP_INDENT = "            ";
 
 const DEFAULT_PACKAGE = "org.firstinspires.ftc.teamcode";
 
@@ -281,7 +294,14 @@ export function buildExportModel(input: BuildModelInput): ExportModel {
     startPoseVar,
     poses,
     paths,
-    sequence: buildSequence(lines, paths, methodNameByLineId, input.sequence),
+    sequence: buildSequence(
+      lines,
+      paths,
+      methodNameByLineId,
+      input.sequence,
+      input.actions ?? [],
+    ),
+    hardware: input.hardware,
     warnings,
     usesInterpolator,
   };
@@ -292,6 +312,7 @@ function buildSequence(
   paths: PathDecl[],
   methodNameByLineId: Map<string, string>,
   sequence: SequenceItem[] | undefined,
+  actions: ActionDef[],
 ): SequenceStep[] {
   // Fall back to running every path in declaration order.
   const allPaths = (): SequenceStep[] =>
@@ -300,23 +321,68 @@ function buildSequence(
       methodName: path.methodName,
     }));
 
-  if (!sequence || sequence.length === 0) return allPaths();
+  const hasSequence = !!sequence && sequence.length > 0;
+  if (!hasSequence && actions.length === 0) return allPaths();
+  const items: SequenceItem[] = hasSequence
+    ? sequence
+    : lines.map((line) => ({ kind: "path", lineId: line.id }));
 
-  const steps: SequenceStep[] = [];
-  let previousMethod: string | null = null;
+  const segmentById = new Map(lines.map((line) => [line.id, line]));
+  const actionById = new Map(actions.map((action) => [action.id, action]));
+  const resolve = <K extends ActionDef["kind"]>(ids: string[] = [], kind: K) =>
+    ids
+      .map((id) => actionById.get(id))
+      .filter(
+        (action): action is Extract<ActionDef, { kind: K }> =>
+          action?.kind === kind,
+      );
+  const command = (expression: string): SequenceStep => ({
+    kind: "command",
+    expression,
+  });
 
-  sequence.forEach((item) => {
+  // One path call per run of segments with the same method (a group).
+  type Run = { methodName: string; segments: AtomicPath[] };
+  const runs: (Run | { wait: number })[] = [];
+  items.forEach((item) => {
     if (item.kind === "wait") {
-      steps.push({ kind: "wait", durationMs: item.durationMs });
-      previousMethod = null;
+      runs.push({ wait: item.durationMs });
       return;
     }
     const methodName = methodNameByLineId.get(item.lineId);
     if (!methodName) return;
-    // A group is one path, so its segments appearing in a row become one call.
-    if (methodName === previousMethod) return;
-    steps.push({ kind: "path", methodName });
-    previousMethod = methodName;
+    const segment = segmentById.get(item.lineId);
+    const last = runs[runs.length - 1];
+    if (last && "methodName" in last && last.methodName === methodName) {
+      if (segment) last.segments.push(segment);
+      return;
+    }
+    runs.push({ methodName, segments: segment ? [segment] : [] });
+  });
+
+  const steps: SequenceStep[] = [];
+  runs.forEach((run) => {
+    if ("wait" in run) {
+      steps.push({ kind: "wait", durationMs: run.wait });
+      return;
+    }
+    const during = [
+      ...new Set(
+        run.segments.flatMap((segment) => segment.actionsDuring ?? []),
+      ),
+    ];
+    const whileDriving = resolve(during, "during");
+    const after = resolve(run.segments.at(-1)?.actionsAfter, "timed");
+    whileDriving.forEach((action) =>
+      steps.push(command(instantExpression(action.start, STEP_INDENT))),
+    );
+    steps.push({ kind: "path", methodName: run.methodName });
+    whileDriving.forEach((action) =>
+      steps.push(command(instantExpression(action.stop, STEP_INDENT))),
+    );
+    after.forEach((action) =>
+      steps.push(command(timedExpression(action, STEP_INDENT))),
+    );
   });
 
   if (steps.length === 0 && lines.length > 0) return allPaths();

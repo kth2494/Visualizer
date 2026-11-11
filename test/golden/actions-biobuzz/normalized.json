@@ -1,0 +1,199 @@
+{
+  "startPoint": {
+    "x": 86.27,
+    "y": 8,
+    "locked": false,
+    "headingDeg": 90
+  },
+  "lines": [
+    {
+      "id": "line-1",
+      "color": "#ffc516",
+      "name": "Path 1",
+      "locked": false,
+      "waitBeforeMs": 0,
+      "waitAfterMs": 0,
+      "waitBeforeName": "",
+      "waitAfterName": "",
+      "actionsAfter": [
+        "shoot"
+      ],
+      "kind": "atomic",
+      "endPoint": {
+        "x": 85.82,
+        "y": 13.22,
+        "name": "shootPose"
+      },
+      "controlPoints": [],
+      "heading": {
+        "type": "linear",
+        "startDeg": 90,
+        "endDeg": 70
+      }
+    },
+    {
+      "id": "line-2",
+      "color": "#ffc516",
+      "name": "Path 2",
+      "locked": false,
+      "waitBeforeMs": 0,
+      "waitAfterMs": 0,
+      "waitBeforeName": "",
+      "waitAfterName": "",
+      "kind": "atomic",
+      "endPoint": {
+        "x": 97.34,
+        "y": 34.4,
+        "name": "ilgongsijak"
+      },
+      "controlPoints": [],
+      "heading": {
+        "type": "linear",
+        "startDeg": 70,
+        "endDeg": 0
+      }
+    },
+    {
+      "id": "line-3",
+      "color": "#ffc516",
+      "name": "Path 3",
+      "locked": false,
+      "waitBeforeMs": 0,
+      "waitAfterMs": 0,
+      "waitBeforeName": "",
+      "waitAfterName": "",
+      "actionsDuring": [
+        "intake"
+      ],
+      "kind": "atomic",
+      "endPoint": {
+        "x": 124,
+        "y": 34.4,
+        "name": "ilgongmeok"
+      },
+      "controlPoints": [],
+      "heading": {
+        "type": "linear",
+        "startDeg": 0,
+        "endDeg": 0
+      }
+    },
+    {
+      "id": "line-4",
+      "color": "#ffc516",
+      "name": "Path 4",
+      "locked": false,
+      "waitBeforeMs": 0,
+      "waitAfterMs": 0,
+      "waitBeforeName": "",
+      "waitAfterName": "",
+      "actionsAfter": [
+        "shoot"
+      ],
+      "kind": "atomic",
+      "endPoint": {
+        "x": 85.82,
+        "y": 13.22,
+        "name": "shootPose2"
+      },
+      "controlPoints": [],
+      "heading": {
+        "type": "linear",
+        "startDeg": 0,
+        "endDeg": 70
+      }
+    },
+    {
+      "id": "line-5",
+      "color": "#ffc516",
+      "name": "Path 5",
+      "locked": false,
+      "waitBeforeMs": 0,
+      "waitAfterMs": 0,
+      "waitBeforeName": "",
+      "waitAfterName": "",
+      "kind": "atomic",
+      "endPoint": {
+        "x": 90.97,
+        "y": 19.1,
+        "name": "endPose"
+      },
+      "controlPoints": [],
+      "heading": {
+        "type": "linear",
+        "startDeg": 70,
+        "endDeg": 90
+      }
+    }
+  ],
+  "shapes": [],
+  "sequence": [
+    {
+      "kind": "path",
+      "lineId": "line-1"
+    },
+    {
+      "kind": "path",
+      "lineId": "line-2"
+    },
+    {
+      "kind": "path",
+      "lineId": "line-3"
+    },
+    {
+      "kind": "path",
+      "lineId": "line-4"
+    },
+    {
+      "kind": "path",
+      "lineId": "line-5"
+    }
+  ],
+  "fieldPoints": [],
+  "robot": {
+    "forwardVelocity": 75,
+    "strafeVelocity": 65,
+    "aVelocity": 3.141592653589793,
+    "kFriction": 0.1,
+    "rLength": 16,
+    "rWidth": 16,
+    "safetyMargin": 1,
+    "maxAcceleration": 50,
+    "maxDeceleration": 50
+  },
+  "activePaths": [],
+  "actions": [
+    {
+      "id": "shoot",
+      "name": "발사",
+      "kind": "timed",
+      "durationMs": 4000,
+      "steps": [
+        {
+          "atMs": 0,
+          "code": "launch1.setVelocity(1600);\nlaunch2.setVelocity(-1600);"
+        },
+        {
+          "atMs": 1500,
+          "code": "intake.setPower(1);\nballmove.setPower(0.78);"
+        },
+        {
+          "atMs": 4000,
+          "code": "launch1.setVelocity(0);\nlaunch2.setVelocity(0);\nintake.setPower(0);\nballmove.setPower(0);"
+        }
+      ]
+    },
+    {
+      "id": "intake",
+      "name": "흡입",
+      "kind": "during",
+      "start": "intake.setPower(1);\nballmove.setPower(0.1);",
+      "stop": "intake.setPower(0);\nballmove.setPower(0);"
+    }
+  ],
+  "hardware": {
+    "imports": "import com.qualcomm.robotcore.hardware.DcMotorEx;\nimport org.firstinspires.ftc.teamcode.pedro.Constants;",
+    "fields": "private DcMotorEx launch1, launch2, intake, ballmove;",
+    "init": "launch1 = hardwareMap.get(DcMotorEx.class, \"launch\");\nlaunch2 = hardwareMap.get(DcMotorEx.class, \"launch2\");\nintake = hardwareMap.get(DcMotorEx.class, \"intake\");\nballmove = hardwareMap.get(DcMotorEx.class, \"ballmove\");"
+  }
+}

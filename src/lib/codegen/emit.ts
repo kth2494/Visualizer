@@ -120,6 +120,13 @@ export function emitPathMethods(
     .join("\n\n");
 }
 
+/** User-pasted text, indented; empty text emits nothing at all. */
+function block(text = "", indent: string, before = "\n", after = ""): string {
+  const lines = text.split("\n").filter((line) => line.trim() !== "");
+  if (lines.length === 0) return "";
+  return `${before}${lines.map((line) => `${indent}${line.trimEnd()}`).join("\n")}${after}`;
+}
+
 function emitSequence(model: ExportModel): string {
   const follower = "follower";
   return model.sequence
@@ -140,7 +147,7 @@ function emitRunOpModeBody(model: ExportModel, spec: LanguageSpec): string {
   const t = spec.terminator;
   return `        Scheduler.reset()${t}
         follower = Constants.create(hardwareMap)${t}
-        follower.setPose(${model.startPoseVar})${t}
+${block(model.hardware?.init, "        ", "", "\n")}        follower.setPose(${model.startPoseVar})${t}
         follower.update()${t}
 
         waitForStart()${t}
@@ -198,11 +205,11 @@ ${methods}
 
   return `${spec.packageStatement(model.options.packageName)}
 
-${spec.imports("opmode", { interpolator: model.usesInterpolator })}
+${spec.imports("opmode", { interpolator: model.usesInterpolator })}${block(model.hardware?.imports, "")}
 
 ${emitWarnings(model, spec)}${spec.classOpen(model.options.className, "opmode")}
 
-${spec.followerField()}
+${spec.followerField()}${block(model.hardware?.fields, "    ")}
 
 ${fields}
 

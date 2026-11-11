@@ -42,12 +42,14 @@ describe.each(fixtures)("code export of $name", ({ name, text }) => {
   }
 
   it("sequential-command.java", async () => {
-    const { startPoint, lines, sequence } = loadProject(text);
+    const { startPoint, lines, sequence, actions, hardware } =
+      loadProject(text);
     const source = await generateSequentialCommandCode(
       startPoint,
       lines,
       "Auto",
       sequence,
+      { actions, hardware },
     );
     await expect(source).toMatchFileSnapshot(
       goldenPath(name, "codegen", "sequential-command.java"),

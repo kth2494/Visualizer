@@ -1,4 +1,10 @@
-import type { Path, SequenceItem, StartPose } from "../../types";
+import type {
+  ActionDef,
+  HardwareCode,
+  Path,
+  SequenceItem,
+  StartPose,
+} from "../../types";
 import { emitSource } from "./emit";
 import { javaSpec } from "./languages/java";
 import { kotlinSpec } from "./languages/kotlin";
@@ -55,7 +61,14 @@ export function generateSequentialCommandCode(
   lines: Path[],
   className: string | null = null,
   sequence?: SequenceItem[],
+  extras: { actions?: ActionDef[]; hardware?: HardwareCode } = {},
 ): string {
-  const model = buildExportModel({ startPoint, lines, sequence, className });
+  const model = buildExportModel({
+    startPoint,
+    lines,
+    sequence,
+    className,
+    ...extras,
+  });
   return emitSource(model, javaSpec, "full");
 }
