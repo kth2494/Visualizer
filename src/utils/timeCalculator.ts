@@ -1,4 +1,5 @@
 import type {
+  ActionDef,
   BasePoint,
   Path,
   Settings,
@@ -138,11 +139,22 @@ export function calculateVisualizationPathTime(
   lines: Path[],
   settings: Settings,
   sequence?: SequenceItem[],
+  actions: ActionDef[] = [],
 ): TimePrediction {
+  // Timed actions run after their path while the robot stands still.
+  const timedMs = new Map(
+    actions.flatMap((action) =>
+      action.kind === "timed" ? [[action.id, action.durationMs]] : [],
+    ),
+  );
   const waitsByPathId = new Map(
     flattenToAtomicSegments(startPoint, lines).map(({ line }) => [
       line.id,
-      Math.max(0, Number(line.waitAfterMs) || 0),
+      Math.max(0, Number(line.waitAfterMs) || 0) +
+        (line.actionsAfter ?? []).reduce(
+          (total, id) => total + Math.max(0, timedMs.get(id) ?? 0),
+          0,
+        ),
     ]),
   );
   const baseSequence =

@@ -28,6 +28,7 @@ export class Playback {
       this.#project.doc.lines,
       this.#getSettings(),
       this.#project.doc.sequence,
+      this.#project.doc.actions,
     ),
   );
   overlayPredictions = $derived.by(() =>
@@ -37,6 +38,7 @@ export class Playback {
         overlay.doc.lines,
         this.#overlays.settingsFor(overlay),
         overlay.doc.sequence,
+        overlay.doc.actions,
       ),
     ),
   );

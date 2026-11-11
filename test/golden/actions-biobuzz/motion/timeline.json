@@ -1,5 +1,5 @@
 {
-  "totalTime": 6.156346259462162,
+  "totalTime": 14.156346259462161,
   "segmentTimes": [
     0.647417061747251,
     1.3888188333574865,
@@ -17,31 +17,59 @@
       "lineId": "line-1"
     },
     {
+      "type": "wait",
+      "name": "Path visualization wait",
+      "duration": 4,
+      "startTime": 0.647417061747251,
+      "endTime": 4.647417061747251,
+      "startHeading": 70,
+      "targetHeading": 70,
+      "atPoint": {
+        "x": 85.82,
+        "y": 13.22,
+        "name": "shootPose"
+      }
+    },
+    {
       "type": "travel",
       "duration": 1.3888188333574865,
-      "startTime": 0.647417061747251,
-      "endTime": 2.0362358951047375,
+      "startTime": 4.647417061747251,
+      "endTime": 6.0362358951047375,
       "lineId": "line-2"
     },
     {
       "type": "travel",
       "duration": 1.4604109010822948,
-      "startTime": 2.0362358951047375,
-      "endTime": 3.496646796187032,
+      "startTime": 6.0362358951047375,
+      "endTime": 7.496646796187032,
       "lineId": "line-3"
     },
     {
       "type": "travel",
       "duration": 1.868930187132661,
-      "startTime": 3.496646796187032,
-      "endTime": 5.365576983319693,
+      "startTime": 7.496646796187032,
+      "endTime": 9.365576983319693,
       "lineId": "line-4"
+    },
+    {
+      "type": "wait",
+      "name": "Path visualization wait",
+      "duration": 4,
+      "startTime": 9.365576983319693,
+      "endTime": 13.365576983319693,
+      "startHeading": 70,
+      "targetHeading": 70,
+      "atPoint": {
+        "x": 85.82,
+        "y": 13.22,
+        "name": "shootPose2"
+      }
     },
     {
       "type": "travel",
       "duration": 0.7907692761424687,
-      "startTime": 5.365576983319693,
-      "endTime": 6.156346259462162,
+      "startTime": 13.365576983319693,
+      "endTime": 14.156346259462161,
       "lineId": "line-5"
     }
   ]

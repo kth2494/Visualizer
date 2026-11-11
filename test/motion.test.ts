@@ -13,12 +13,13 @@ function load(text: string) {
 
 describe.each(fixtures)("motion of $name", ({ name, text }) => {
   it("timeline", async () => {
-    const { startPoint, lines, sequence, settings } = load(text);
+    const { startPoint, lines, sequence, actions, settings } = load(text);
     const prediction = calculateVisualizationPathTime(
       startPoint,
       lines,
       settings,
       sequence,
+      actions,
     );
     await expect(
       JSON.stringify(prediction, null, 2) + "\n",
@@ -26,12 +27,13 @@ describe.each(fixtures)("motion of $name", ({ name, text }) => {
   });
 
   it("robot poses", async () => {
-    const { startPoint, lines, sequence, settings } = load(text);
+    const { startPoint, lines, sequence, actions, settings } = load(text);
     const { timeline } = calculateVisualizationPathTime(
       startPoint,
       lines,
       settings,
       sequence,
+      actions,
     );
     const totalTime = timeline.at(-1)?.endTime ?? 0;
     const poses = Array.from({ length: 41 }, (_, step) => {

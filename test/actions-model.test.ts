@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "../src/config/defaults";
+import { calculateVisualizationPathTime } from "../src/utils/timeCalculator";
 import { parseProject, serializeProject } from "../src/io";
 import { setActions, setHardware, setPathActions } from "../src/model/commands";
 import type { ActionDef, HardwareCode } from "../src/types";
@@ -76,5 +78,29 @@ describe("actions in the project", () => {
     const result = parseProject(JSON.stringify(raw), DEFAULT_ROBOT);
     if (!result.ok) throw new Error(result.error);
     expect(result.doc.lines[0].actionsDuring).toEqual(["intake"]);
+  });
+});
+
+describe("actions in the timeline", () => {
+  it("adds timed action durations after their path", () => {
+    const doc = loadProject(
+      fixtures.find((f) => f.name === "actions-biobuzz")!.text,
+    );
+    const settings = { ...DEFAULT_SETTINGS, ...doc.robot };
+    const without = calculateVisualizationPathTime(
+      doc.startPoint,
+      doc.lines,
+      settings,
+      doc.sequence,
+    ).totalTime;
+    const withShoot = calculateVisualizationPathTime(
+      doc.startPoint,
+      doc.lines,
+      settings,
+      doc.sequence,
+      doc.actions,
+    ).totalTime;
+    // Two shots of 4 s each; the intake runs while driving and adds nothing.
+    expect(withShoot - without).toBeCloseTo(8, 3);
   });
 });

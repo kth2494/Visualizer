@@ -1,6 +1,7 @@
 import type {
   BasePoint,
   Path,
+  ActionDef,
   SequenceItem,
   Settings,
   StartPose,
@@ -26,6 +27,7 @@ export interface GifPath {
   startPoint: StartPose;
   lines: Path[];
   sequence: SequenceItem[];
+  actions?: ActionDef[];
   settings: Settings;
   /** Draws every segment in this colour instead of its own. */
   color?: string;
@@ -85,6 +87,7 @@ export async function renderPathGif(request: GifRequest): Promise<Blob> {
       path.lines,
       path.settings,
       path.sequence,
+      path.actions,
     ),
   );
   const duration = Math.max(0, ...timelines.map((t) => t.totalTime));
