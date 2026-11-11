@@ -10,16 +10,16 @@ const VERSION = "v8";
 const CACHE_NAME = `pedro-visualizer-${VERSION}`;
 
 const PRECACHE = [
-  "/",
-  "/manifest.webmanifest",
-  "/favicon.ico",
-  "/fields/centerstage.webp",
-  "/fields/intothedeep.webp",
-  "/fields/decode.webp",
-  "/fields/biobuzz-dark.webp",
-  "/fields/biobuzz-light.webp",
-  "/robot.png",
-  "/logo-duck.svg",
+  "./",
+  "./manifest.webmanifest",
+  "./favicon.ico",
+  "./fields/centerstage.webp",
+  "./fields/intothedeep.webp",
+  "./fields/decode.webp",
+  "./fields/biobuzz-dark.webp",
+  "./fields/biobuzz-light.webp",
+  "./robot.png",
+  "./logo-duck.svg",
 ];
 
 self.addEventListener("install", (event) => {

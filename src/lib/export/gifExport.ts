@@ -1,3 +1,4 @@
+import { publicUrl } from "../../utils/publicUrl";
 import type {
   BasePoint,
   Path,
@@ -59,9 +60,11 @@ export async function renderPathGif(request: GifRequest): Promise<Blob> {
   const loadImage = createImageLoader();
   const [fieldImage, robotImage] = await Promise.all([
     loadImage(request.fieldImageSrc).catch(() =>
-      loadImage("/fields/decode.webp"),
+      loadImage(publicUrl("/fields/decode.webp")),
     ),
-    loadImage(request.robotImageSrc).catch(() => loadImage("/robot.png")),
+    loadImage(publicUrl(request.robotImageSrc)).catch(() =>
+      loadImage(publicUrl("/robot.png")),
+    ),
   ]);
 
   const background = document.createElement("canvas");

@@ -9,7 +9,7 @@
 
   let { src, fieldMapName, onSettled = () => {} }: Props = $props();
 
-  const FALLBACK_FIELD_MAP = "/fields/decode.webp";
+  const FALLBACK_FIELD_MAP = "./fields/decode.webp";
   // The parent clips to the floor; the image's edge tiles run under the walls.
   const inset = `${(-FIELD_IMAGE_OVERHANG / FIELD_SIZE) * 100}%`;
   const extent = `${((FIELD_SIZE + 2 * FIELD_IMAGE_OVERHANG) / FIELD_SIZE) * 100}%`;

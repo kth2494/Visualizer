@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { publicUrl } from "../../../utils/publicUrl";
   import { Upload, X } from "@lucide/svelte";
   import type { Settings } from "../../../types";
   import { imageToBase64 } from "../../../utils/file";
@@ -78,12 +79,13 @@
       class="relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-base"
     >
       <img
-        src={currentImage}
+        src={publicUrl(currentImage)}
         alt="Robot preview"
         class="size-full object-contain"
         onerror={(e) => {
           console.error("Failed to load robot image:", settings.robotImage);
-          (e.currentTarget as HTMLImageElement).src = DEFAULT_ROBOT_IMAGE;
+          (e.currentTarget as HTMLImageElement).src =
+            publicUrl(DEFAULT_ROBOT_IMAGE);
         }}
       />
       {#if isCustom}
