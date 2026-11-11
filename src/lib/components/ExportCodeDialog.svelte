@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Copy, X } from "@lucide/svelte";
+  import { Check, Copy, Download, X } from "@lucide/svelte";
   import type {
     ActionDef,
     HardwareCode,
@@ -20,6 +20,8 @@
   } from "../codegen";
   import { highlight, type CodeLanguage } from "../highlight";
   import { pathStem } from "../../utils/filename";
+  import { downloadBlob } from "../../utils/download";
+  import { toClassName } from "../codegen/identifiers";
 
   type Format = "java" | "kotlin" | "points" | "sequential";
   type Mode = "full" | "class" | "coordinates";
@@ -112,6 +114,14 @@
     isOpen = true;
   }
 
+  /** Java needs the file named after its public class. */
+  function save() {
+    downloadBlob(
+      new Blob([code], { type: "text/x-java" }),
+      `${toClassName(className, "AutoPath")}.java`,
+    );
+  }
+
   async function copy() {
     try {
       await navigator.clipboard.writeText(code);
@@ -168,7 +178,12 @@
     {@html html}
   </div>
 
-  <div class="flex justify-end border-t border-border px-5 py-3">
+  <div class="flex justify-end gap-2 border-t border-border px-5 py-3">
+    {#if format === "sequential"}
+      <Button size="sm" onclick={save} disabled={!code}>
+        <Download class="size-4" /> Save .java
+      </Button>
+    {/if}
     <Button variant="primary" size="sm" onclick={copy} disabled={!code}>
       {#if copied}<Check class="size-4" /> Copied{:else}<Copy class="size-4" /> Copy{/if}
     </Button>

@@ -38,3 +38,26 @@ test("the robot shows the running action during playback", async ({ page }) => {
   await page.getByLabel("Playback position").fill("90");
   await expect(page.getByTestId("action-label")).toContainText("발사");
 });
+
+test("the sequential export saves a .java file named after the class", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("#point-1-0")).toBeVisible();
+
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByText("Export sequential command").click();
+  await page.getByPlaceholder("AutoPath").fill("LRightEnd");
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Save .java" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("LRightEnd.java");
+  const text = await (
+    await download.createReadStream()
+  )
+    .toArray()
+    .then((chunks) => Buffer.concat(chunks).toString());
+  expect(text).toContain("public class LRightEnd extends LinearOpMode");
+});
