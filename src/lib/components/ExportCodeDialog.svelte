@@ -1,6 +1,12 @@
 <script lang="ts">
   import { Check, Copy, X } from "@lucide/svelte";
-  import type { StartPose, Path, SequenceItem } from "../../types";
+  import type {
+    ActionDef,
+    HardwareCode,
+    StartPose,
+    Path,
+    SequenceItem,
+  } from "../../types";
   import Modal from "./ui/Modal.svelte";
   import IconButton from "./ui/IconButton.svelte";
   import Button from "./ui/Button.svelte";
@@ -23,6 +29,8 @@
     startPoint: StartPose;
     lines: Path[];
     sequence: SequenceItem[];
+    actions?: ActionDef[];
+    hardware?: HardwareCode;
   }
 
   let {
@@ -30,6 +38,8 @@
     startPoint,
     lines,
     sequence,
+    actions,
+    hardware,
   }: Props = $props();
 
   const TITLES: Record<Format, string> = {
@@ -69,6 +79,7 @@
           lines,
           className,
           sequence,
+          { actions, hardware },
         );
     }
   }

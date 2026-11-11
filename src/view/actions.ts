@@ -26,7 +26,7 @@ import {
   toggleSnap,
 } from "./viewOptions";
 
-export type CodeFormat = "java" | "kotlin" | "points";
+export type CodeFormat = "java" | "kotlin" | "points" | "sequential";
 
 /** Something the user can do, reachable from the palette and maybe a shortcut. */
 export interface Action {
@@ -288,6 +288,12 @@ export function createActions(deps: ActionDeps): Action[] {
       run: () => layout.toggle("right"),
     },
     {
+      id: "app.actions",
+      group: "View",
+      title: "Edit robot actions",
+      run: () => (dialogs.actions = true),
+    },
+    {
       id: "app.settings",
       group: "View",
       title: "Settings",
@@ -326,6 +332,12 @@ export function createActions(deps: ActionDeps): Action[] {
       group: "Export",
       title: "Export Kotlin code",
       run: () => deps.exportCode("kotlin"),
+    },
+    {
+      id: "export.sequential",
+      group: "Export",
+      title: "Export sequential command",
+      run: () => deps.exportCode("sequential"),
     },
     {
       id: "export.points",

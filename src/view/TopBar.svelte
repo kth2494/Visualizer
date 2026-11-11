@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Download, Redo2, Settings, Undo2 } from "@lucide/svelte";
+  import { Download, Redo2, Settings, Undo2, Zap } from "@lucide/svelte";
   import { currentFilePath } from "../stores";
   import { basename } from "../utils/filename";
   import { useProject } from "../state/project.svelte";
@@ -37,6 +37,7 @@
     items(
       "export.java",
       "export.kotlin",
+      "export.sequential",
       "export.points",
       "export.json",
       "separator",
@@ -95,6 +96,9 @@
     <Menu label="Export" entries={exportEntries} align="end">
       {#snippet icon()}<Download />{/snippet}
     </Menu>
+    <IconButton label="Edit robot actions" onclick={action("app.actions").run}>
+      <Zap />
+    </IconButton>
     <IconButton label="Settings" onclick={action("app.settings").run}>
       <Settings />
     </IconButton>

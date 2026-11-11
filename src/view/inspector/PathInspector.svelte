@@ -3,7 +3,11 @@
   import type { AtomicPath, BasePoint, Path } from "../../types";
   import { FIELD_SIZE } from "../../config";
   import { gridSize, showGrid, snapToGrid } from "../../stores";
-  import { updatePathById, updatePoint } from "../../model/commands";
+  import {
+    setPathActions,
+    updatePathById,
+    updatePoint,
+  } from "../../model/commands";
   import { atomicSegments } from "../../utils/pathTraversal";
   import { useEditor } from "../../state/editor.svelte";
   import { useProject } from "../../state/project.svelte";
@@ -11,7 +15,11 @@
   import { PATH_COLORS } from "../../utils/color";
   import ColorField from "../../lib/components/ui/ColorField.svelte";
   import IconButton from "../../lib/components/ui/IconButton.svelte";
-  import { fieldClass, labelClass } from "../../lib/components/ui/styles";
+  import {
+    checkboxClass,
+    fieldClass,
+    labelClass,
+  } from "../../lib/components/ui/styles";
   import HeadingControls from "../../lib/components/HeadingControls.svelte";
 
   interface Props {
@@ -121,6 +129,38 @@
         }))}
     />
   </label>
+
+  {#each [["actionsDuring", "during", "Actions while driving"], ["actionsAfter", "timed", "Actions after arriving"]] as const as [slot, kind, title] (slot)}
+    {@const choices = (project.doc.actions ?? []).filter(
+      (action) => action.kind === kind,
+    )}
+    {#if choices.length}
+      <fieldset class="flex flex-col gap-1">
+        <legend class={labelClass}>{title}</legend>
+        {#each choices as action (action.id)}
+          <label class="flex items-center gap-2 text-sm text-heading">
+            <input
+              type="checkbox"
+              class={checkboxClass}
+              checked={line[slot]?.includes(action.id) ?? false}
+              disabled={line.locked}
+              onchange={(event) =>
+                project.apply(
+                  setPathActions(
+                    line.id,
+                    slot,
+                    event.currentTarget.checked
+                      ? [...(line[slot] ?? []), action.id]
+                      : (line[slot] ?? []).filter((id) => id !== action.id),
+                  ),
+                )}
+            />
+            {action.name || "(unnamed)"}
+          </label>
+        {/each}
+      </fieldset>
+    {/if}
+  {/each}
 
   <ColorField
     label="Color"

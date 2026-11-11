@@ -8,6 +8,7 @@
   import FileManager from "../lib/FileManager.svelte";
   import ExportCodeDialog from "../lib/components/ExportCodeDialog.svelte";
   import SettingsDialog from "../lib/components/SettingsDialog.svelte";
+  import ActionsDialog from "../lib/components/ActionsDialog.svelte";
   import ProgressDialog from "../lib/components/ProgressDialog.svelte";
   import DialogHost from "../lib/components/ui/DialogHost.svelte";
   import ToastHost from "../lib/components/ui/ToastHost.svelte";
@@ -49,7 +50,11 @@
   startPoint={project.doc.startPoint}
   lines={project.doc.lines}
   sequence={project.doc.sequence}
+  actions={project.doc.actions}
+  hardware={project.doc.hardware}
 />
+
+<ActionsDialog bind:isOpen={dialogs.actions} />
 
 <SettingsDialog
   bind:isOpen={dialogs.settings}

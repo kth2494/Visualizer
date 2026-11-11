@@ -4,7 +4,12 @@ export class Dialogs {
   settings = $state(false);
   palette = $state(false);
   exportCode = $state(false);
+  actions = $state(false);
   anyOpen = $derived(
-    this.fileManager || this.settings || this.palette || this.exportCode,
+    this.fileManager ||
+      this.settings ||
+      this.palette ||
+      this.exportCode ||
+      this.actions,
   );
 }
