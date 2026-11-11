@@ -68,7 +68,34 @@ export type Path = {
   waitAfterMs?: number;
   waitBeforeName?: string;
   waitAfterName?: string;
+  /** Ids of `during` actions run while driving this path. */
+  actionsDuring?: string[];
+  /** Ids of `timed` actions run, in order, after this path arrives. */
+  actionsAfter?: string[];
 } & (Atomic | Compound);
+
+export interface TimedStep {
+  atMs: number;
+  code: string;
+}
+
+/** A robot action whose Java code is pasted into the sequential export. */
+export type ActionDef =
+  | {
+      id: string;
+      name: string;
+      kind: "timed";
+      steps: TimedStep[];
+      durationMs: number;
+    }
+  | { id: string; name: string; kind: "during"; start: string; stop: string };
+
+/** Java text the sequential export adds around the generated OpMode. */
+export interface HardwareCode {
+  imports: string;
+  fields: string;
+  init: string;
+}
 
 export interface Atomic {
   kind: "atomic";

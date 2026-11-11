@@ -1,9 +1,11 @@
 import type {
+  ActionDef,
   BasePoint,
   ControlPoint,
   FieldPoint,
   Heading,
   HeadingType,
+  HardwareCode,
   AtomicPath,
   Path,
   WaitSegment,
@@ -11,6 +13,7 @@ import type {
   Point,
   SequenceItem,
   Shape,
+  TimedStep,
   StartPose,
 } from "../types";
 import { getRandomColor } from "./color";
@@ -51,6 +54,8 @@ type StoredCommon = {
   waitAfterMs?: number;
   waitBeforeName?: string;
   waitAfterName?: string;
+  actionsDuring?: unknown;
+  actionsAfter?: unknown;
   /** Either the current object form or the pre-migration string. */
   heading?: Heading | HeadingType;
 };
@@ -169,7 +174,72 @@ function normalizeCommon(path: StoredPath) {
     ),
     waitBeforeName: path.waitBeforeName ?? path.waitBefore?.name ?? "",
     waitAfterName: path.waitAfterName ?? path.waitAfter?.name ?? "",
+    ...idList("actionsDuring", path.actionsDuring),
+    ...idList("actionsAfter", path.actionsAfter),
   };
+}
+
+/** `{ [key]: ids }` for a non-empty string list, otherwise nothing. */
+function idList<K extends string>(key: K, value: unknown) {
+  const ids = Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string")
+    : [];
+  return ids.length ? ({ [key]: ids } as Record<K, string[]>) : {};
+}
+
+const isString = (value: unknown): value is string => typeof value === "string";
+
+function toAction(value: unknown): ActionDef | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (!isString(raw.id) || !isString(raw.name)) return null;
+  if (raw.kind === "during" && isString(raw.start) && isString(raw.stop)) {
+    return {
+      id: raw.id,
+      name: raw.name,
+      kind: "during",
+      start: raw.start,
+      stop: raw.stop,
+    };
+  }
+  if (
+    raw.kind === "timed" &&
+    typeof raw.durationMs === "number" &&
+    Array.isArray(raw.steps)
+  ) {
+    const steps = raw.steps.filter(
+      (step): step is TimedStep =>
+        typeof step?.atMs === "number" && isString(step?.code),
+    );
+    return {
+      id: raw.id,
+      name: raw.name,
+      kind: "timed",
+      durationMs: raw.durationMs,
+      steps,
+    };
+  }
+  return null;
+}
+
+export function normalizeActions(input: unknown): ActionDef[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const actions = input.map(toAction).filter((a): a is ActionDef => Boolean(a));
+  return actions.length ? actions : undefined;
+}
+
+export function normalizeHardware(input: unknown): HardwareCode | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const raw = input as Record<string, unknown>;
+  const text = (key: string) => (isString(raw[key]) ? raw[key] : "");
+  const hardware = {
+    imports: text("imports"),
+    fields: text("fields"),
+    init: text("init"),
+  };
+  return hardware.imports || hardware.fields || hardware.init
+    ? hardware
+    : undefined;
 }
 
 export function normalizePaths(input: StoredPath[] = []): Path[] {

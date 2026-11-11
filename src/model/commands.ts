@@ -1,5 +1,7 @@
 import type { ProjectDoc } from "../io/project";
 import type {
+  ActionDef,
+  HardwareCode,
   AtomicPath,
   BasePoint,
   Path,
@@ -90,6 +92,28 @@ export const setLines =
 export const setSequence =
   (sequence: SequenceItem[]): Command =>
   (doc) => ({ ...doc, sequence });
+
+export const setActions =
+  (actions: ActionDef[]): Command =>
+  ({ actions: _, ...doc }) =>
+    actions.length ? { ...doc, actions } : doc;
+
+export const setHardware =
+  (hardware: HardwareCode): Command =>
+  ({ hardware: _, ...doc }) =>
+    hardware.imports || hardware.fields || hardware.init
+      ? { ...doc, hardware }
+      : doc;
+
+/** Set a segment's action ids; an empty list removes the field. */
+export const setPathActions = (
+  lineId: string,
+  slot: "actionsDuring" | "actionsAfter",
+  ids: string[],
+): Command =>
+  updateSegment(lineId, ({ [slot]: _, ...segment }) =>
+    ids.length ? { ...segment, [slot]: ids } : segment,
+  );
 
 /** Apply `update` to a path or group, wherever it sits in the tree. */
 export const updatePathById =

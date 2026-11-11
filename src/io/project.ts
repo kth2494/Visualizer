@@ -4,7 +4,9 @@ import {
   getDefaultStartPoint,
 } from "../config/defaults";
 import type {
+  ActionDef,
   FieldPoint,
+  HardwareCode,
   Path,
   RobotConfig,
   SequenceItem,
@@ -13,7 +15,9 @@ import type {
 } from "../types";
 import {
   deriveSequence,
+  normalizeActions,
   normalizeFieldPoints,
+  normalizeHardware,
   normalizePaths,
   normalizeShapes,
   normalizeStartPose,
@@ -34,6 +38,9 @@ export interface ProjectDoc {
   robot: RobotConfig;
   /** Other saved files shown alongside this one. */
   activePaths: string[];
+  /** Absent rather than empty, so files without actions are unchanged. */
+  actions?: ActionDef[];
+  hardware?: HardwareCode;
 }
 
 export type LoadResult =
@@ -91,6 +98,10 @@ export function projectFromJson(
       ? project.activePaths.filter((path) => typeof path === "string")
       : [],
   };
+  const actions = normalizeActions(project.actions);
+  if (actions) doc.actions = actions;
+  const hardware = normalizeHardware(project.hardware);
+  if (hardware) doc.hardware = hardware;
   return { ok: true, doc, warnings };
 }
 
