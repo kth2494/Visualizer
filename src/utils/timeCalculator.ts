@@ -55,6 +55,7 @@ export function calculatePathTime(
         timeline.push({
           type: "wait",
           name: item.name,
+          action: item.action,
           duration: waitSeconds,
           startTime: currentTime,
           endTime: currentTime + waitSeconds,
@@ -141,22 +142,28 @@ export function calculateVisualizationPathTime(
   sequence?: SequenceItem[],
   actions: ActionDef[] = [],
 ): TimePrediction {
-  // Timed actions run after their path while the robot stands still.
-  const timedMs = new Map(
-    actions.flatMap((action) =>
-      action.kind === "timed" ? [[action.id, action.durationMs]] : [],
-    ),
-  );
-  const waitsByPathId = new Map(
+  const waitAfterMs = new Map(
     flattenToAtomicSegments(startPoint, lines).map(({ line }) => [
       line.id,
-      Math.max(0, Number(line.waitAfterMs) || 0) +
-        (line.actionsAfter ?? []).reduce(
-          (total, id) => total + Math.max(0, timedMs.get(id) ?? 0),
-          0,
-        ),
+      Math.max(0, Number(line.waitAfterMs) || 0),
     ]),
   );
+  // Timed actions run while the robot stands still after the whole top-level
+  // path, as the export runs them after the group's single follow().
+  const actionById = new Map(actions.map((action) => [action.id, action]));
+  const timedAfter = new Map<string, Extract<ActionDef, { kind: "timed" }>[]>();
+  lines.forEach((node) => {
+    const segments = atomicSegments([node]);
+    const last = segments.at(-1);
+    if (!last) return;
+    timedAfter.set(
+      last.id,
+      segments
+        .flatMap((segment) => segment.actionsAfter ?? [])
+        .map((id) => actionById.get(id))
+        .filter((action) => action?.kind === "timed"),
+    );
+  });
   const baseSequence =
     sequence && sequence.length
       ? sequence
@@ -169,7 +176,7 @@ export function calculateVisualizationPathTime(
   baseSequence.forEach((item) => {
     visualizationSequence.push(item);
     if (item.kind === "path") {
-      const durationMs = waitsByPathId.get(item.lineId) ?? 0;
+      const durationMs = waitAfterMs.get(item.lineId) ?? 0;
       if (durationMs > 0) {
         visualizationSequence.push({
           kind: "wait",
@@ -178,6 +185,16 @@ export function calculateVisualizationPathTime(
           durationMs,
         });
       }
+      timedAfter.get(item.lineId)?.forEach((action, index) => {
+        if (action.durationMs <= 0) return;
+        visualizationSequence.push({
+          kind: "wait",
+          id: `action-wait-${item.lineId}-${index}`,
+          name: action.name,
+          durationMs: action.durationMs,
+          action: action.name,
+        });
+      });
     }
   });
 

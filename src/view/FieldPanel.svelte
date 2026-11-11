@@ -452,6 +452,15 @@
           arrowId="arrowhead-main"
           onImageSettled={() => (loadedRobotImage = robotImageSrc)}
         />
+        {#if playback.actionLabel}
+          <div
+            class="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-full rounded-md bg-primary px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-white tabular-nums shadow"
+            style={`left: ${xy.x}px; top: ${xy.y - Math.max(x(settings.rLength), x(settings.rWidth)) / 2 - 6}px;`}
+            data-testid="action-label"
+          >
+            {playback.actionLabel}
+          </div>
+        {/if}
       {/if}
 
       <svg

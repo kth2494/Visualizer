@@ -4,6 +4,7 @@ import { findCollisions, type Collision } from "../model/collision";
 import { robotPoseAt, type RobotPose } from "../sim/pose";
 import { createAnimationController } from "../utils/animation";
 import { calculateVisualizationPathTime } from "../utils/timeCalculator";
+import { actionLabelAt } from "../sim/actionLabel";
 import type { Overlays } from "./overlays.svelte";
 import type { ProjectStore } from "./project.svelte";
 
@@ -57,6 +58,15 @@ export class Playback {
       this.#project.doc.startPoint,
       this.#project.doc.lines,
       this.#getSettings(),
+    ),
+  );
+  /** The robot action running now, shown beside the robot; null when idle. */
+  actionLabel = $derived.by(() =>
+    actionLabelAt(
+      this.prediction.timeline,
+      this.seconds,
+      this.#project.doc.lines,
+      this.#project.doc.actions,
     ),
   );
   /** Each overlay's robot; one that finishes early waits at its end. */

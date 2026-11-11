@@ -135,6 +135,8 @@ export type SequenceWaitItem = {
   name: string;
   durationMs: number;
   locked?: boolean;
+  /** Set on playback-only waits that stand for a timed robot action. */
+  action?: string;
 };
 
 export type SequenceItem = SequencePathItem | SequenceWaitItem;
@@ -212,6 +214,8 @@ export interface TimelineEvent {
   startHeading?: number;
   targetHeading?: number;
   atPoint?: BasePoint;
+  /** The timed robot action this wait shows, by name. */
+  action?: string;
 }
 
 export interface TimePrediction {

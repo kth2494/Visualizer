@@ -18,7 +18,8 @@
     },
     {
       "type": "wait",
-      "name": "Path visualization wait",
+      "name": "발사",
+      "action": "발사",
       "duration": 4,
       "startTime": 0.647417061747251,
       "endTime": 4.647417061747251,
@@ -53,7 +54,8 @@
     },
     {
       "type": "wait",
-      "name": "Path visualization wait",
+      "name": "발사",
+      "action": "발사",
       "duration": 4,
       "startTime": 9.365576983319693,
       "endTime": 13.365576983319693,
