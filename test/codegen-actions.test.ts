@@ -77,6 +77,27 @@ describe("sequential export with actions", () => {
     expect(src.match(/intake\.setPower\(0\)/g)).toHaveLength(1);
   });
 
+  it("runs a timed action ticked on a segment inside a group after the group", () => {
+    const shoot: ActionDef = {
+      id: "shoot",
+      name: "발사",
+      kind: "timed",
+      durationMs: 1000,
+      steps: [{ atMs: 0, code: "shoot();" }],
+    };
+    const doc = setPathActions("line-quadratic", "actionsAfter", ["shoot"])(
+      fixture("features-1.5"),
+    );
+    const src = generateSequentialCommandCode(
+      doc.startPoint,
+      doc.lines,
+      "Auto",
+      doc.sequence,
+      { actions: [shoot] },
+    );
+    expect(src.match(/shoot\(\);/g)).toHaveLength(1);
+  });
+
   it("emits nothing new when there are no actions or hardware", async () => {
     const doc = fixture("features-1.5");
     const src = generateSequentialCommandCode(

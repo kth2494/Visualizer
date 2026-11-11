@@ -372,7 +372,11 @@ function buildSequence(
       ),
     ];
     const whileDriving = resolve(during, "during");
-    const after = resolve(run.segments.at(-1)?.actionsAfter, "timed");
+    // A group drives as one path, so every segment's after-actions follow it.
+    const after = resolve(
+      run.segments.flatMap((segment) => segment.actionsAfter ?? []),
+      "timed",
+    );
     whileDriving.forEach((action) =>
       steps.push(command(instantExpression(action.start, STEP_INDENT))),
     );
