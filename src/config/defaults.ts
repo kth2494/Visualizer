@@ -8,10 +8,11 @@ import type {
 import { makePathId } from "../utils/ids";
 
 /**
- * Default robot dimensions
+ * Default robot dimensions: team 25341's robot, measured over the mecanum
+ * wheels (wheelbase 9.45 + 104 mm wheel; track 16.14 + ~37 mm wheel width).
  */
-export const DEFAULT_ROBOT_LENGTH = 16;
-export const DEFAULT_ROBOT_WIDTH = 16;
+export const DEFAULT_ROBOT_LENGTH = 13.5;
+export const DEFAULT_ROBOT_WIDTH = 17.6;
 
 /**
  * Default canvas drawing settings
