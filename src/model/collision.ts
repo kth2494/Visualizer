@@ -312,3 +312,26 @@ function boundsOverlap(a: Bounds, b: Bounds): boolean {
     a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY
   );
 }
+
+/** One line per path and obstacle it hits, for warning before export. */
+export function collisionWarnings(
+  doc: ProjectDoc,
+  collisions: Collision[],
+): string[] {
+  const segments = flattenToAtomicSegments(doc.startPoint, doc.lines);
+  const pathName = (lineId: string) => {
+    const index = segments.findIndex((entry) => entry.line.id === lineId);
+    return segments[index]?.line.name || `Path ${index + 1}`;
+  };
+  const obstacleName = (obstacle: Obstacle) =>
+    obstacle.kind === "wall"
+      ? "the field wall"
+      : doc.shapes.find((shape) => shape.id === obstacle.shapeId)?.name ||
+        "an obstacle";
+  const warnings = collisions.map(({ lineId, obstacle }) =>
+    lineId
+      ? `${pathName(lineId)} hits ${obstacleName(obstacle)}`
+      : `The robot hits ${obstacleName(obstacle)} while turning or waiting`,
+  );
+  return [...new Set(warnings)].sort();
+}

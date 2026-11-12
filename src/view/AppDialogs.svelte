@@ -1,5 +1,7 @@
 <script lang="ts">
   import { useProject } from "../state/project.svelte";
+  import { usePlayback } from "../state/playback.svelte";
+  import { collisionWarnings, findCollisions } from "../model/collision";
   import type { Dialogs } from "../state/dialogs.svelte";
   import type { ProjectFiles } from "../state/files.svelte";
   import type { GifExport } from "../state/gifExport.svelte";
@@ -27,6 +29,16 @@
   let { dialogs, files, gif, prefs, theme, actions }: Props = $props();
 
   const project = useProject();
+  const playback = usePlayback();
+  // Checked on every export, obstacles setting or not: a wall hit is never wanted.
+  let exportWarnings = $derived(
+    dialogs.exportCode
+      ? collisionWarnings(
+          project.doc,
+          findCollisions(project.doc, playback.prediction.timeline),
+        )
+      : [],
+  );
   let exportDialog = $state<ExportCodeDialog>();
 
   export function exportCode(format: CodeFormat) {
@@ -52,6 +64,7 @@
   sequence={project.doc.sequence}
   actions={project.doc.actions}
   hardware={project.doc.hardware}
+  warnings={exportWarnings}
 />
 
 <ActionsDialog bind:isOpen={dialogs.actions} />

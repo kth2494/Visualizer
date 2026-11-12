@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../src/config/defaults";
 import type { ProjectDoc } from "../src/io";
 import {
+  collisionWarnings,
   findCollisions,
   robotFootprint,
   type Collision,
@@ -410,5 +411,52 @@ describe("collision performance", () => {
 
     console.info(`findCollisions(features-1.5): ${perCall.toFixed(3)} ms/call`);
     expect(perCall).toBeLessThan(5);
+  });
+});
+
+describe("collision warnings for export", () => {
+  const warningsFor = (doc: ProjectDoc) => {
+    const { timeline } = calculateVisualizationPathTime(
+      doc.startPoint,
+      doc.lines,
+      settingsOf(doc),
+      doc.sequence,
+    );
+    return collisionWarnings(doc, findCollisions(doc, timeline));
+  };
+
+  it("names each colliding path once, by name or number", () => {
+    const doc = project(
+      { x: 40, y: 72 },
+      [
+        line("east", { x: 140, y: 72 }, { name: "Into wall" }),
+        line("back", { x: 40, y: 72 }),
+      ],
+      [{ ...box("goal", 80, 60, 84, 84), name: "Goal" }],
+    );
+    expect(warningsFor(doc)).toEqual([
+      "Into wall hits Goal",
+      "Into wall hits the field wall",
+      "Path 2 hits Goal",
+      // Path 2 sets off from where Path 1 met the wall.
+      "Path 2 hits the field wall",
+    ]);
+  });
+
+  it("is empty when the robot stays clear", () => {
+    const doc = project({ x: 40, y: 72 }, [line("a", { x: 60, y: 72 })], []);
+    expect(warningsFor(doc)).toEqual([]);
+  });
+
+  it("reports contact while turning or waiting in place", () => {
+    const doc = project(
+      { x: 72, y: 30 },
+      [line("a", { x: 72, y: 5 }, { waitAfterMs: 500 })],
+      [],
+    );
+    expect(warningsFor(doc)).toEqual([
+      "Path 1 hits the field wall",
+      "The robot hits the field wall while turning or waiting",
+    ]);
   });
 });

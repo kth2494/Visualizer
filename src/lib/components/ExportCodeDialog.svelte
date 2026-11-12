@@ -33,6 +33,8 @@
     sequence: SequenceItem[];
     actions?: ActionDef[];
     hardware?: HardwareCode;
+    /** Collisions found along the routine, shown above the code. */
+    warnings?: string[];
   }
 
   let {
@@ -42,6 +44,7 @@
     sequence,
     actions,
     hardware,
+    warnings = [],
   }: Props = $props();
 
   const TITLES: Record<Format, string> = {
@@ -171,6 +174,22 @@
     <IconButton label="Close" onclick={() => (isOpen = false)}><X /></IconButton
     >
   </div>
+
+  {#if warnings.length}
+    <div
+      role="alert"
+      class="border-b border-border bg-danger/10 px-5 py-2 text-sm text-heading"
+    >
+      <p class="font-semibold text-danger">
+        The robot may collide on this route
+      </p>
+      <ul class="list-disc pl-5">
+        {#each warnings as warning (warning)}
+          <li>{warning}</li>
+        {/each}
+      </ul>
+    </div>
+  {/if}
 
   <div class="code-export relative min-h-0 flex-1 overflow-auto text-[13px]">
     <!-- Shiki's output, built from generated code with its HTML escaped. -->
