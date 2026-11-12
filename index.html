@@ -1,0 +1,33 @@
+<!doctype html>
+<html class="dark h-full w-full" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f0f14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Pedro Pathing Visualizer</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!-- Applies the saved theme before first paint; state/theme.svelte.ts owns it after. -->
+    <script>
+      try {
+        const theme = (localStorage.getItem("theme") || "").replaceAll('"', "");
+        const dark =
+          theme === "light"
+            ? false
+            : theme === "system"
+              ? matchMedia("(prefers-color-scheme: dark)").matches
+              : true;
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-BY_uEyLy.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DNbLre8W.css">
+  </head>
+  <body class="h-full w-full">
+  </body>
+</html>
