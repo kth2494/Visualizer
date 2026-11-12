@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withActionDefaults } from "./session/actionDefaults";
   import { onMount } from "svelte";
   import { cubicInOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
@@ -158,7 +159,9 @@
         return;
       }
 
-      const doc = createDefaultProject(currentProject().robot, fieldMap);
+      const doc = withActionDefaults(
+        createDefaultProject(currentProject().robot, fieldMap),
+      );
       await browserFileStore.writeFile(name, serializeProject(doc));
       await refreshDirectory();
       applyProject(doc);

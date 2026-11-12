@@ -61,3 +61,26 @@ test("the sequential export saves a .java file named after the class", async ({
     .then((chunks) => Buffer.concat(chunks).toString());
   expect(text).toContain("public class LRightEnd extends LinearOpMode");
 });
+
+test("a new project starts with the last edited actions", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#point-1-0")).toBeVisible();
+
+  await page.getByTitle("Edit robot actions").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Add timed action" }).click();
+  await dialog.getByLabel("Action name").fill("발사");
+  await dialog.getByLabel("Fields").fill("private Shooter shooter;");
+  await dialog.getByTitle("Close").click();
+
+  await page.getByRole("button", { name: "File" }).click();
+  await page.getByText("New project").click();
+  await page.getByRole("button", { name: "Discard changes" }).click();
+
+  await expect(page.getByRole("checkbox", { name: "발사" })).not.toBeChecked();
+  await page.getByTitle("Edit robot actions").click();
+  await expect(page.getByLabel("Action name")).toHaveValue("발사");
+  await expect(page.getByLabel("Fields")).toHaveValue(
+    "private Shooter shooter;",
+  );
+});

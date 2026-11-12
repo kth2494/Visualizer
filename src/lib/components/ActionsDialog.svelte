@@ -3,6 +3,8 @@
   import type { ActionDef, HardwareCode } from "../../types";
   import { setActions, setHardware } from "../../model/commands";
   import { useProject } from "../../state/project.svelte";
+  import { saveActionDefaults } from "../session/actionDefaults";
+  import type { Command } from "../../model/commands";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import IconButton from "./ui/IconButton.svelte";
@@ -29,9 +31,15 @@
   const newId = () =>
     `action-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+  /** Every edit here also becomes what new projects start with. */
+  function apply(command: Command, options?: { coalesce?: string }) {
+    project.apply(command, options);
+    saveActionDefaults(project.doc);
+  }
+
   /** Typing into one field merges into one undo step. */
   function save(next: ActionDef[], field: string) {
-    project.apply(setActions(next), { coalesce: `actions.${field}` });
+    apply(setActions(next), { coalesce: `actions.${field}` });
   }
 
   function update(index: number, patch: Partial<ActionDef>, field: string) {
@@ -54,15 +62,15 @@
             steps: [{ atMs: 0, code: "" }],
           }
         : { id: newId(), name: "", kind, start: "", stop: "" };
-    project.apply(setActions([...actions, action]));
+    apply(setActions([...actions, action]));
   }
 
   function remove(index: number) {
-    project.apply(setActions(actions.filter((_, i) => i !== index)));
+    apply(setActions(actions.filter((_, i) => i !== index)));
   }
 
   function editHardware(key: keyof HardwareCode, value: string) {
-    project.apply(setHardware({ ...hardware, [key]: value }), {
+    apply(setHardware({ ...hardware, [key]: value }), {
       coalesce: `hardware.${key}`,
     });
   }

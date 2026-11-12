@@ -13,6 +13,7 @@ import {
   overwritePickedFile,
   saveToPickedFile,
 } from "../lib/files/localFiles";
+import { withActionDefaults } from "../lib/session/actionDefaults";
 import {
   loadSessionSnapshot,
   saveSessionSnapshot,
@@ -74,9 +75,11 @@ export class ProjectFiles {
       return;
     }
     this.open(
-      createDefaultProject(
-        this.#project.doc.robot,
-        this.#prefs.settings.fieldMap,
+      withActionDefaults(
+        createDefaultProject(
+          this.#project.doc.robot,
+          this.#prefs.settings.fieldMap,
+        ),
       ),
     );
     currentFilePath.set(null);

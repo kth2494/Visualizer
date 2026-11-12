@@ -10,6 +10,7 @@
   import { createActions, shortcutsFor, type ActionDeps } from "./view/actions";
   import { installShortcuts } from "./lib/shortcuts";
   import { createDefaultProject, robotConfigOf } from "./io";
+  import { withActionDefaults } from "./lib/session/actionDefaults";
   import { DEFAULT_SETTINGS, FIELD_SIZE } from "./config";
   import { ProjectStore, provideProject } from "./state/project.svelte";
   import { EditorState, provideEditor } from "./state/editor.svelte";
@@ -23,9 +24,11 @@
   import { Theme } from "./state/theme.svelte";
 
   const project = new ProjectStore(
-    createDefaultProject(
-      robotConfigOf(DEFAULT_SETTINGS),
-      DEFAULT_SETTINGS.fieldMap,
+    withActionDefaults(
+      createDefaultProject(
+        robotConfigOf(DEFAULT_SETTINGS),
+        DEFAULT_SETTINGS.fieldMap,
+      ),
     ),
   );
   const prefs = new Prefs(project);
