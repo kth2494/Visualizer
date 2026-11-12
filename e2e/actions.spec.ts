@@ -85,21 +85,20 @@ test("a new project starts with the last edited actions", async ({ page }) => {
   );
 });
 
-test("export warns when a path drives into the field wall", async ({
+test("the field warns when a path drives into the field wall", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.locator("#point-1-0")).toBeVisible();
-
-  await page.getByRole("button", { name: "Export" }).click();
-  await page.getByText("Export sequential command").click();
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await page.getByTitle("Close").click();
 
   await page.getByLabel("End X", { exact: true }).fill("2");
-  await page.getByRole("button", { name: "Export" }).click();
-  await page.getByText("Export sequential command").click();
   await expect(page.getByRole("alert")).toContainText(
     "Path 1 hits the field wall",
   );
+
+  // The code export stays free of the warning.
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByText("Export sequential command").click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
 });

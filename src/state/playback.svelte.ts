@@ -1,6 +1,10 @@
 import { getContext, setContext } from "svelte";
 import type { Settings } from "../types";
-import { findCollisions, type Collision } from "../model/collision";
+import {
+  collisionWarnings,
+  findCollisions,
+  type Collision,
+} from "../model/collision";
 import { robotPoseAt, type RobotPose } from "../sim/pose";
 import { createAnimationController } from "../utils/animation";
 import { calculateVisualizationPathTime } from "../utils/timeCalculator";
@@ -85,9 +89,14 @@ export class Playback {
 
   /** Where the open project's robot hits an obstacle or wall, when obstacles are on. */
   collisions: Collision[] = $derived.by(() =>
-    this.#getSettings().experimentalFeatures?.obstacles
-      ? findCollisions(this.#project.doc, this.prediction.timeline)
-      : [],
+    this.#getSettings().experimentalFeatures?.obstacles ? this.#hits : [],
+  );
+  #hits: Collision[] = $derived.by(() =>
+    findCollisions(this.#project.doc, this.prediction.timeline),
+  );
+  /** Always checked, obstacles setting or not: a wall hit is never wanted. */
+  warnings: string[] = $derived.by(() =>
+    collisionWarnings(this.#project.doc, this.#hits),
   );
 
   constructor(

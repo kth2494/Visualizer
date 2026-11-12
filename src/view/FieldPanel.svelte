@@ -615,6 +615,22 @@
       {#if !assetsReady}
         <FieldLoadingOverlay />
       {/if}
+
+      {#if playback.warnings.length}
+        <div
+          role="alert"
+          class="pointer-events-none absolute top-2 left-2 z-40 max-w-[60%] rounded-lg border border-danger/40 bg-surface/90 px-3 py-2 text-xs text-heading shadow backdrop-blur"
+        >
+          <p class="font-semibold text-danger">
+            The robot may collide on this route
+          </p>
+          <ul class="list-disc pl-4">
+            {#each playback.warnings as warning (warning)}
+              <li>{warning}</li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     </div>
   </div>
 
