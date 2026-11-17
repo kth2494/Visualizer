@@ -59,7 +59,14 @@ export interface PathDecl {
 export type SequenceStep =
   | { kind: "path"; methodName: string }
   | { kind: "wait"; durationMs: number }
-  | { kind: "command"; expression: string };
+  | {
+      kind: "command";
+      expression: string;
+      /** Which robot action this runs, for the Send to robot routine. */
+      action?: { id: string; phase: ActionPhase };
+    };
+
+export type ActionPhase = "start" | "stop" | "after";
 
 export interface ExportModel {
   options: ExportOptions;

@@ -5,11 +5,13 @@ export class Dialogs {
   palette = $state(false);
   exportCode = $state(false);
   actions = $state(false);
+  robot = $state(false);
   anyOpen = $derived(
     this.fileManager ||
       this.settings ||
       this.palette ||
       this.exportCode ||
-      this.actions,
+      this.actions ||
+      this.robot,
   );
 }

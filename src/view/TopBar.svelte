@@ -38,6 +38,7 @@
       "export.java",
       "export.kotlin",
       "export.sequential",
+      "export.robot",
       "export.points",
       "export.json",
       "separator",

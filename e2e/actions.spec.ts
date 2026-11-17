@@ -102,3 +102,27 @@ test("the field warns when a path drives into the field wall", async ({
   await page.getByText("Export sequential command").click();
   await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
 });
+
+test("send to robot posts the routine to the robot", async ({ page }) => {
+  let posted = "";
+  await page.route("http://192.168.43.1:8080/pedro/routine", async (route) => {
+    posted = route.request().postData() ?? "";
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ ok: true, name: "auto", steps: 1 }),
+    });
+  });
+  await page.goto("/");
+  await expect(page.locator("#point-1-0")).toBeVisible();
+
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByText("Send to robot").click();
+  await page.getByLabel("Routine name").fill("auto");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+
+  await expect(page.getByRole("status")).toContainText('Sent "auto"');
+  const routine = JSON.parse(posted);
+  expect(routine.format).toBe("pedro-routine");
+  expect(routine.steps[0]).toEqual({ path: "path1" });
+});

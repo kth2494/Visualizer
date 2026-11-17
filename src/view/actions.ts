@@ -340,6 +340,12 @@ export function createActions(deps: ActionDeps): Action[] {
       run: () => deps.exportCode("sequential"),
     },
     {
+      id: "export.robot",
+      group: "Export",
+      title: "Send to robot",
+      run: () => (dialogs.robot = true),
+    },
+    {
       id: "export.points",
       group: "Export",
       title: "Export points array",

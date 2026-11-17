@@ -17,6 +17,7 @@ import { headingCall } from "./heading";
 import { IdentifierAllocator, toClassName } from "./identifiers";
 import { PEDRO_API } from "./pedroApi";
 import type {
+  ActionPhase,
   ExportModel,
   ExportOptions,
   PathDecl,
@@ -336,10 +337,11 @@ function buildSequence(
         (action): action is Extract<ActionDef, { kind: K }> =>
           action?.kind === kind,
       );
-  const command = (expression: string): SequenceStep => ({
-    kind: "command",
-    expression,
-  });
+  const command = (
+    expression: string,
+    id: string,
+    phase: ActionPhase,
+  ): SequenceStep => ({ kind: "command", expression, action: { id, phase } });
 
   // One path call per run of segments with the same method (a group).
   type Run = { methodName: string; segments: AtomicPath[] };
@@ -378,14 +380,20 @@ function buildSequence(
       "timed",
     );
     whileDriving.forEach((action) =>
-      steps.push(command(instantExpression(action.start, STEP_INDENT))),
+      steps.push(
+        command(instantExpression(action.start, STEP_INDENT), action.id, "start"),
+      ),
     );
     steps.push({ kind: "path", methodName: run.methodName });
     whileDriving.forEach((action) =>
-      steps.push(command(instantExpression(action.stop, STEP_INDENT))),
+      steps.push(
+        command(instantExpression(action.stop, STEP_INDENT), action.id, "stop"),
+      ),
     );
     after.forEach((action) =>
-      steps.push(command(timedExpression(action, STEP_INDENT))),
+      steps.push(
+        command(timedExpression(action, STEP_INDENT), action.id, "after"),
+      ),
     );
   });
 

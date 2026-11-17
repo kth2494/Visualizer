@@ -9,6 +9,7 @@
   import ExportCodeDialog from "../lib/components/ExportCodeDialog.svelte";
   import SettingsDialog from "../lib/components/SettingsDialog.svelte";
   import ActionsDialog from "../lib/components/ActionsDialog.svelte";
+  import SendToRobotDialog from "../lib/components/SendToRobotDialog.svelte";
   import ProgressDialog from "../lib/components/ProgressDialog.svelte";
   import DialogHost from "../lib/components/ui/DialogHost.svelte";
   import ToastHost from "../lib/components/ui/ToastHost.svelte";
@@ -55,6 +56,7 @@
 />
 
 <ActionsDialog bind:isOpen={dialogs.actions} />
+<SendToRobotDialog bind:isOpen={dialogs.robot} />
 
 <SettingsDialog
   bind:isOpen={dialogs.settings}
