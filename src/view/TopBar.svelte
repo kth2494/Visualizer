@@ -24,6 +24,7 @@
       "file.new",
       "file.open",
       "file.import",
+      "file.openJava",
       "separator",
       "file.save",
       "file.saveAs",

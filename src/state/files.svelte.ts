@@ -14,6 +14,7 @@ import {
   saveToPickedFile,
 } from "../lib/files/localFiles";
 import { withActionDefaults } from "../lib/session/actionDefaults";
+import { importSequentialJava } from "../io/javaImport";
 import {
   loadSessionSnapshot,
   saveSessionSnapshot,
@@ -218,6 +219,56 @@ export class ProjectFiles {
     input.accept = OPENABLE_EXTENSIONS.join(",");
     input.onchange = () => void this.upload(input);
     input.click();
+  }
+
+  /** Open a sequential command OpMode the Visualizer exported, as a new unsaved project. */
+  openJavaFromDisk() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".java";
+    input.onchange = () => void this.openJava(input);
+    input.click();
+  }
+
+  async openJava(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (
+      this.#project.dirty &&
+      !(await confirmDialog({
+        title: `Open ${file.name}?`,
+        message: "Your unsaved changes will be lost.",
+        confirmLabel: "Discard changes",
+        danger: true,
+      }))
+    ) {
+      return;
+    }
+    const result = importSequentialJava(
+      await file.text(),
+      withActionDefaults(
+        createDefaultProject(
+          this.#project.doc.robot,
+          this.#prefs.settings.fieldMap,
+        ),
+      ),
+    );
+    if (!result.ok) {
+      showToast(result.error, "error");
+      return;
+    }
+    this.open(result.doc, { saved: false });
+    // Named after the class, so exporting again suggests the same class name.
+    currentFilePath.set(`${result.className}${PROJECT_EXTENSION}`);
+    // A dialog, not a toast: missing "code would be dropped" costs real work.
+    if (result.warnings.length) {
+      await confirmDialog({
+        title: `Opened ${file.name} with warnings`,
+        message: result.warnings.join("\n"),
+        confirmLabel: "OK",
+      });
+    }
   }
 
   /** Open a file chosen from disk and keep a copy in app storage. */

@@ -112,6 +112,12 @@ export function createActions(deps: ActionDeps): Action[] {
       run: () => files.openFromDisk(),
     },
     {
+      id: "file.openJava",
+      group: "File",
+      title: "Open Java…",
+      run: () => files.openJavaFromDisk(),
+    },
+    {
       id: "file.save",
       group: "File",
       title: "Save",

@@ -126,3 +126,40 @@ test("send to robot posts the routine to the robot", async ({ page }) => {
   expect(routine.format).toBe("pedro-routine");
   expect(routine.steps[0]).toEqual({ path: "path1" });
 });
+
+test("an exported sequential command opens back for editing", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("#point-1-0")).toBeVisible();
+
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByText("Export sequential command").click();
+  await page.getByPlaceholder("AutoPath").fill("Reopened");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Save .java" }).click(),
+  ]);
+  const java = (await (await download.createReadStream()).toArray())
+    .map((chunk) => chunk.toString())
+    .join("")
+    .replace(/poseFactory\.of\([^,]+/, "poseFactory.of(40");
+  await page.getByTitle("Close").click();
+
+  await page.getByRole("button", { name: "File" }).click();
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.getByText("Open Java…").click(),
+  ]);
+  await chooser.setFiles({
+    name: "Reopened.java",
+    mimeType: "text/x-java",
+    buffer: Buffer.from(java),
+  });
+
+  await expect(page.locator("#point-1-0")).toBeVisible();
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByText("Export sequential command").click();
+  await expect(page.getByPlaceholder("AutoPath")).toHaveValue("Reopened");
+  await expect(page.getByText("poseFactory.of(40,")).toBeVisible();
+});

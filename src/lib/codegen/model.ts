@@ -40,7 +40,7 @@ export interface BuildModelInput {
 /** Steps sit inside `sequential(` at this depth in the emitted routine. */
 const STEP_INDENT = "            ";
 
-const DEFAULT_PACKAGE = "org.firstinspires.ftc.teamcode";
+const DEFAULT_PACKAGE = "org.firstinspires.ftc.teamcode.auto";
 
 export function lineId(line: AtomicPath, index: number): string {
   return line.id || `line-${index + 1}`;
@@ -381,7 +381,11 @@ function buildSequence(
     );
     whileDriving.forEach((action) =>
       steps.push(
-        command(instantExpression(action.start, STEP_INDENT), action.id, "start"),
+        command(
+          instantExpression(action.start, STEP_INDENT),
+          action.id,
+          "start",
+        ),
       ),
     );
     steps.push({ kind: "path", methodName: run.methodName });
