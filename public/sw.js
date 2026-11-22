@@ -6,7 +6,7 @@
 // images, the GIF worker) keeps its name across builds, so it is served from
 // cache while a fresh copy is fetched for the next load. A new build therefore
 // needs no VERSION bump; bump it only to drop the cache entirely.
-const VERSION = "v8";
+const VERSION = "v9";
 const CACHE_NAME = `pedro-visualizer-${VERSION}`;
 
 const PRECACHE = [
