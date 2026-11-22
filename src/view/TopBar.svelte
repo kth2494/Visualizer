@@ -56,7 +56,12 @@
 >
   <div class="flex min-w-0 items-center gap-3">
     <div class="flex items-center gap-2 pr-2">
-      <img src="./logo-duck.svg" alt="" class="size-6" draggable="false" />
+      <img
+        src="./logo.png"
+        alt=""
+        class="size-6 rounded-md"
+        draggable="false"
+      />
       <span class="text-sm font-semibold whitespace-nowrap text-heading">
         Pedro Pathing Visualizer
       </span>

@@ -6,7 +6,7 @@
 // images, the GIF worker) keeps its name across builds, so it is served from
 // cache while a fresh copy is fetched for the next load. A new build therefore
 // needs no VERSION bump; bump it only to drop the cache entirely.
-const VERSION = "v9";
+const VERSION = "v10";
 const CACHE_NAME = `pedro-visualizer-${VERSION}`;
 
 const PRECACHE = [
@@ -19,7 +19,7 @@ const PRECACHE = [
   "./fields/biobuzz-dark.webp",
   "./fields/biobuzz-light.webp",
   "./robot.png",
-  "./logo-duck.svg",
+  "./logo.png",
 ];
 
 self.addEventListener("install", (event) => {
