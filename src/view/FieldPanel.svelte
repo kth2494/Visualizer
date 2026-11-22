@@ -384,7 +384,7 @@
       {#if settings.fieldMap === "custom"}
         <!-- ponytail: custom backgrounds get this season's structures; pick per season if another field needs it. -->
         <FieldMapImage
-          src="./fields/biobuzz-structures.webp"
+          src={`./fields/biobuzz-structures-${scheme}.webp`}
           fieldMapName="BIOBUZZ structures"
         />
       {/if}

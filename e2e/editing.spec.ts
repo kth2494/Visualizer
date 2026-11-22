@@ -167,6 +167,6 @@ test("a custom field image keeps the BIOBUZZ structures on top", async ({
   await expect(fields.first()).toHaveAttribute("src", /^data:image\/png/);
   await expect(fields.last()).toHaveAttribute(
     "src",
-    "./fields/biobuzz-structures.webp",
+    /\.\/fields\/biobuzz-structures-(light|dark)\.webp/,
   );
 });
