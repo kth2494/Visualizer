@@ -152,7 +152,10 @@
             value={prefs.fieldMap}
             onchange={(event) => {
               prefs.fieldMap = event.currentTarget.value;
-              project.apply(setShapes(getDefaultShapes(prefs.fieldMap)));
+              // A custom image only swaps the picture; the obstacles stay.
+              if (prefs.fieldMap !== "custom") {
+                project.apply(setShapes(getDefaultShapes(prefs.fieldMap)));
+              }
             }}
           >
             {#each AVAILABLE_FIELD_MAPS as field (field.value)}

@@ -133,6 +133,6 @@ describe("createDefaultProject", () => {
       );
     expect(names("decode.webp")).toEqual(["Red GOAL", "Blue GOAL"]);
     expect(names("biobuzz.webp")).toContain("Red HIVE");
-    expect(names("custom")).toEqual([]);
+    expect(names("custom")).toEqual(names("biobuzz.webp"));
   });
 });

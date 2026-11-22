@@ -140,6 +140,8 @@ export const BLUE_ALLIANCE_COLORS = { color: "#2563eb", fillColor: "#60a5fa" };
 const FIELD_OBSTACLES: Record<string, () => Shape[]> = {
   "decode.webp": decodeObstacles,
   "biobuzz.webp": biobuzzObstacles,
+  // ponytail: a custom image is assumed to be this season's field; map it to its own obstacles if another season needs one.
+  custom: biobuzzObstacles,
 };
 
 export function getDefaultShapes(fieldMap: string): Shape[] {
