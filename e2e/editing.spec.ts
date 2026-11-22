@@ -152,3 +152,21 @@ test("the context menu adds a control point", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Add control point here" }).click();
   await expect(page.getByLabel("CP1 X", { exact: true })).toBeVisible();
 });
+
+test("a custom field image keeps the BIOBUZZ structures on top", async ({
+  page,
+}) => {
+  await openApp(page);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("combobox", { name: "Field" }).selectOption("custom");
+  await page
+    .locator('input[type=file][accept^="image/png"]')
+    .setInputFiles("public/logo.png");
+  await page.keyboard.press("Escape");
+  const fields = page.getByRole("img", { name: "Field" });
+  await expect(fields.first()).toHaveAttribute("src", /^data:image\/png/);
+  await expect(fields.last()).toHaveAttribute(
+    "src",
+    "./fields/biobuzz-structures.webp",
+  );
+});

@@ -381,6 +381,13 @@
         fieldMapName={settings.fieldMap}
         onSettled={() => (loadedFieldMap = fieldMapSrc)}
       />
+      {#if settings.fieldMap === "custom"}
+        <!-- ponytail: custom backgrounds get this season's structures; pick per season if another field needs it. -->
+        <FieldMapImage
+          src="./fields/biobuzz-structures.webp"
+          fieldMapName="BIOBUZZ structures"
+        />
+      {/if}
 
       <svg
         class="pointer-events-none absolute inset-0 z-15"
