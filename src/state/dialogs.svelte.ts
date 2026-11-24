@@ -6,12 +6,14 @@ export class Dialogs {
   exportCode = $state(false);
   actions = $state(false);
   robot = $state(false);
+  cloud = $state(false);
   anyOpen = $derived(
     this.fileManager ||
       this.settings ||
       this.palette ||
       this.exportCode ||
       this.actions ||
-      this.robot,
+      this.robot ||
+      this.cloud,
   );
 }

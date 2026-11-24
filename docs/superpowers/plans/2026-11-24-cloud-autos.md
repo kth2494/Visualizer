@@ -31,10 +31,12 @@
 ### Task 1: JSON↔Yjs binding
 
 **Files:**
+
 - Create: `src/cloud/binding.ts`
 - Test: `test/cloud-binding.test.ts`
 
 **Produces:**
+
 - `ROOT = "doc"`
 - `writeDoc(ydoc: Y.Doc, prev: ProjectDoc | null, next: ProjectDoc, origin?: unknown): void`
   - Diffs into `ydoc.getMap(ROOT)` in one transaction.
@@ -43,6 +45,7 @@
   - A fresh Y.Doc written from `doc`, encoded as an update.
 
 **Mapping rules (spec):**
+
 - Objects become `Y.Map`.
 - Arrays become `Y.Array`.
   - Arrays whose items are all objects with a string `id` are diffed by id.
@@ -50,6 +53,7 @@
 - Primitives are stored as values.
 
 **Tests:**
+
 - Every fixture round-trips: `readDoc` after `writeDoc(null → doc)` equals `doc`.
 - Two synced docs: an edit on A appears on B.
 - Two synced docs: concurrent edits to different paths both survive.
@@ -61,11 +65,13 @@
 ### Task 2: ProjectStore cloud mode + session
 
 **Files:**
+
 - Modify: `src/state/project.svelte.ts`
 - Create: `src/cloud/session.ts`
 - Test: `test/cloud-session.test.ts`
 
 **Produces:**
+
 - `ProjectStore.history: { undo(): void; redo(): void; canUndo(): boolean; canRedo(): boolean; stop(): void } | null`
   - When set, `undo`, `redo` and `canUndo`/`canRedo` delegate to it.
   - `commit` and `cancel` call `stop()`.
@@ -77,23 +83,27 @@
 - **Cancel in cloud mode:** undo the capture since the drag began, then `replace(readDoc)`.
 
 **Tests:**
+
 - Undo reverts only the local edit, with a remote edit in between.
 - A remote edit mid-drag, then cancel: the remote edit survives.
 
 ### Task 3: Vercel functions
 
 **Files:**
+
 - Create: `api/_team.ts` (password check, Liveblocks client)
 - Create: `api/liveblocks-auth.ts` (POST)
 - Create: `api/autos.ts` (GET, POST, PATCH, DELETE)
 - Test: `test/cloud-api.test.ts` (Liveblocks mocked with `vi.mock("@liveblocks/node")`)
 
 **`liveblocks-auth`:**
+
 - Takes `{password, name}`.
 - Runs `prepareSession(randomId, {userInfo:{name}})` with `.allow("auto:*", FULL_ACCESS)`.
 - Returns the token body. Returns 401 on a bad password.
 
 **`autos`:**
+
 - Checks the `x-team-password` header. Returns 401 on a bad password.
 - **GET:** returns `[{id, name, lastConnectionAt}]`.
   - Lists rooms with the query `roomId^"auto:"`.
@@ -106,6 +116,7 @@
 - Rejects any id that doesn't start with `auto:` with 400.
 
 **Tests:**
+
 - 401 without a password.
 - POST seeds the room.
 - DELETE refuses a non-auto id.
@@ -113,6 +124,7 @@
 ### Task 4: UI
 
 **Files:**
+
 - Create: `src/cloud/client.ts`
   - API calls and the password prompt.
   - `openCloudAuto(id)` returns `{ leave }` and status/others stores.
@@ -127,6 +139,7 @@
 - Test: `e2e/cloud.spec.ts` (`/api/autos` mocked: list shows names, delete asks first, Upload current posts the doc)
 
 **Behavior:**
+
 - **Password:** when no password is stored, ask for it with `promptDialog`. On a 401, clear it and ask again.
 - **Name:** ask for a display name once.
 - **Opening an auto:**

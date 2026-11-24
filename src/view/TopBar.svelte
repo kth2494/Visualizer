@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Download, Redo2, Settings, Undo2, Zap } from "@lucide/svelte";
+  import { Cloud, Download, Redo2, Settings, Undo2, Zap } from "@lucide/svelte";
   import { currentFilePath } from "../stores";
   import { basename } from "../utils/filename";
   import { useProject } from "../state/project.svelte";
@@ -7,12 +7,14 @@
   import Menu from "../lib/components/ui/Menu.svelte";
   import type { MenuEntry } from "../lib/components/ui/menu";
   import { actionById, menuItem, type Action } from "./actions";
+  import type { CloudAutos } from "../cloud/cloud.svelte";
 
   interface Props {
     actions: Action[];
+    cloud: CloudAutos;
   }
 
-  let { actions }: Props = $props();
+  let { actions, cloud }: Props = $props();
 
   const project = useProject();
   const action = (id: string) => actionById(actions, id);
@@ -25,6 +27,7 @@
       "file.open",
       "file.import",
       "file.openJava",
+      "file.cloud",
       "separator",
       "file.save",
       "file.saveAs",
@@ -67,21 +70,39 @@
       </span>
     </div>
     <Menu label="File" entries={fileEntries} />
-    <button
-      type="button"
-      class="truncate rounded-md px-2 py-1 text-sm text-body transition hover:bg-base hover:text-heading"
-      title={$currentFilePath
-        ? `${$currentFilePath} (click to rename)`
-        : "Not saved yet (click to save with a name)"}
-      onclick={$currentFilePath
-        ? action("file.rename").run
-        : action("file.save").run}
-    >
-      {basename($currentFilePath) || "Untitled"}
-      {#if project.dirty}
-        <span class="text-primary" title="Unsaved changes">•</span>
-      {/if}
-    </button>
+    {#if cloud.current}
+      <button
+        type="button"
+        class="flex min-w-0 items-center gap-1.5 truncate rounded-md px-2 py-1 text-sm text-body transition hover:bg-base hover:text-heading"
+        title="Shared with your team. Click to see all cloud autos."
+        onclick={action("file.cloud").run}
+      >
+        <Cloud class="size-4 shrink-0 text-primary" />
+        <span class="truncate text-heading">{cloud.current.name}</span>
+        <span class="text-xs">
+          · {cloud.status === "connected" ? "Live" : "Reconnecting…"}
+          {#if cloud.others.length}
+            · {cloud.others.join(", ")}
+          {/if}
+        </span>
+      </button>
+    {:else}
+      <button
+        type="button"
+        class="truncate rounded-md px-2 py-1 text-sm text-body transition hover:bg-base hover:text-heading"
+        title={$currentFilePath
+          ? `${$currentFilePath} (click to rename)`
+          : "Not saved yet (click to save with a name)"}
+        onclick={$currentFilePath
+          ? action("file.rename").run
+          : action("file.save").run}
+      >
+        {basename($currentFilePath) || "Untitled"}
+        {#if project.dirty}
+          <span class="text-primary" title="Unsaved changes">•</span>
+        {/if}
+      </button>
+    {/if}
   </div>
 
   <div class="flex items-center gap-1">

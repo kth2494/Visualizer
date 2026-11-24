@@ -118,6 +118,12 @@ export function createActions(deps: ActionDeps): Action[] {
       run: () => files.openJavaFromDisk(),
     },
     {
+      id: "file.cloud",
+      group: "File",
+      title: "Cloud autos…",
+      run: () => (dialogs.cloud = true),
+    },
+    {
       id: "file.save",
       group: "File",
       title: "Save",

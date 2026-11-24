@@ -10,6 +10,8 @@
   import SettingsDialog from "../lib/components/SettingsDialog.svelte";
   import ActionsDialog from "../lib/components/ActionsDialog.svelte";
   import SendToRobotDialog from "../lib/components/SendToRobotDialog.svelte";
+  import CloudAutosDialog from "../lib/components/CloudAutosDialog.svelte";
+  import type { CloudAutos } from "../cloud/cloud.svelte";
   import ProgressDialog from "../lib/components/ProgressDialog.svelte";
   import DialogHost from "../lib/components/ui/DialogHost.svelte";
   import ToastHost from "../lib/components/ui/ToastHost.svelte";
@@ -23,9 +25,10 @@
     prefs: Prefs;
     theme: Theme;
     actions: Action[];
+    cloud: CloudAutos;
   }
 
-  let { dialogs, files, gif, prefs, theme, actions }: Props = $props();
+  let { dialogs, files, gif, prefs, theme, actions, cloud }: Props = $props();
 
   const project = useProject();
   let exportDialog = $state<ExportCodeDialog>();
@@ -57,6 +60,14 @@
 
 <ActionsDialog bind:isOpen={dialogs.actions} />
 <SendToRobotDialog bind:isOpen={dialogs.robot} />
+{#if dialogs.cloud}
+  <CloudAutosDialog
+    bind:isOpen={dialogs.cloud}
+    {cloud}
+    {files}
+    fieldMap={prefs.settings.fieldMap}
+  />
+{/if}
 
 <SettingsDialog
   bind:isOpen={dialogs.settings}

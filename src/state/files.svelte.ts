@@ -56,8 +56,12 @@ export class ProjectFiles {
     return { ...this.#project.doc, activePaths: this.#activePaths.current };
   }
 
+  /** Called before another document replaces the open one (leaves a cloud auto). */
+  onOpen: () => void = () => {};
+
   /** Open a document, starting a fresh undo history. */
   open(doc: ProjectDoc, options: { saved?: boolean } = {}) {
+    this.onOpen();
     this.#project.load(doc, options);
     activePaths.set(doc.activePaths);
   }

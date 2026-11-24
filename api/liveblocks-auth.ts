@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AUTO_PREFIX, liveblocks, passwordOk, unauthorized } from "./_team";
+import { AUTO_PREFIX, liveblocks, passwordOk, unauthorized } from "./_team.js";
 
 /** Trade the team password for a token to every cloud auto's room. */
 export async function POST(request: Request): Promise<Response> {

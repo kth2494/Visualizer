@@ -22,6 +22,8 @@
   import { GifExport } from "./state/gifExport.svelte";
   import { Dialogs } from "./state/dialogs.svelte";
   import { Theme } from "./state/theme.svelte";
+  import { CloudAutos } from "./cloud/cloud.svelte";
+  import { autoInUrl, listAutos } from "./cloud/client";
 
   const project = new ProjectStore(
     withActionDefaults(
@@ -40,6 +42,8 @@
   const gif = new GifExport(project, prefs, overlays);
   const dialogs = new Dialogs();
   const theme = new Theme();
+  const cloud = new CloudAutos(project);
+  files.onOpen = () => cloud.leave();
   provideProject(project);
   provideEditor(editor);
   providePlayback(playback);
@@ -96,6 +100,13 @@
     await prefs.load();
     files.start();
     layout.restore(prefs.value);
+    const shared = autoInUrl();
+    if (shared) {
+      const name = await listAutos()
+        .then((autos) => autos.find((auto) => auto.id === shared)?.name)
+        .catch(() => undefined);
+      await cloud.open(shared, name).catch(() => cloud.leave());
+    }
   });
 
   onMount(() => {
@@ -120,7 +131,7 @@
 {#if isMobileBlocked}
   <MobileBlocked />
 {:else}
-  <TopBar {actions} />
+  <TopBar {actions} {cloud} />
   <AppDialogs
     bind:this={appDialogs}
     {dialogs}
@@ -129,6 +140,7 @@
     {theme}
     {files}
     {actions}
+    {cloud}
   />
 
   <div class="h-screen w-screen px-3 pt-17 pb-3">

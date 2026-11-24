@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { docUpdate } from "../src/cloud/binding";
+import { docUpdate } from "../src/cloud/binding.js";
+import type { CloudAuto } from "../src/cloud/client";
 import type { ProjectDoc } from "../src/io";
 import {
   AUTO_PREFIX,
@@ -9,14 +10,7 @@ import {
   liveblocks,
   passwordOk,
   unauthorized,
-} from "./_team";
-
-export interface CloudAuto {
-  id: string;
-  name: string;
-  /** ISO time of the last connection, or of creation. */
-  updatedAt: string;
-}
+} from "./_team.js";
 
 const allowed = (request: Request) =>
   passwordOk(request.headers.get("x-team-password"));

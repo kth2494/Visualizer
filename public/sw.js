@@ -6,7 +6,7 @@
 // images, the GIF worker) keeps its name across builds, so it is served from
 // cache while a fresh copy is fetched for the next load. A new build therefore
 // needs no VERSION bump; bump it only to drop the cache entirely.
-const VERSION = "v10";
+const VERSION = "v11";
 const CACHE_NAME = `pedro-visualizer-${VERSION}`;
 
 const PRECACHE = [
@@ -59,6 +59,8 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  // Cloud autos must always be fresh, never a cached list.
+  if (url.pathname.startsWith("/api/")) return;
 
   // The page: the network first, so a new build is picked up on the next
   // load. Offline, fall back to the last page that loaded.
