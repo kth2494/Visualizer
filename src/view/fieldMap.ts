@@ -4,6 +4,17 @@ import { FIELD_SCHEME_IMAGES, type ColorScheme } from "../config/defaults";
 
 const FALLBACK_FIELD_MAP = "/fields/decode.webp";
 
+/** Structures drawn over a custom field image, or null for the built-in fields. */
+export function fieldOverlaySource(
+  settings: Settings,
+  scheme: ColorScheme,
+): string | null {
+  // ponytail: custom backgrounds get this season's structures; pick per season if another field needs it.
+  return settings.fieldMap === "custom"
+    ? `./fields/biobuzz-structures-${scheme}.webp`
+    : null;
+}
+
 /** The field image to draw, using the variant for `scheme` when the field has one. */
 export function fieldMapSource(
   settings: Settings,

@@ -40,6 +40,8 @@ export interface GifPath {
 export interface GifRequest {
   paths: GifPath[];
   fieldImageSrc: string;
+  /** Drawn over the field image, e.g. structures over a custom background. */
+  fieldOverlaySrc?: string | null;
   robotImageSrc: string;
   /** The on-screen field size in pixels; the GIF is a fixed fraction of it. */
   fieldPixels: number;
@@ -58,13 +60,16 @@ export async function renderPathGif(request: GifRequest): Promise<Blob> {
   const toY = (inches: number) => size - inches * pixelsPerInch;
 
   const loadImage = createImageLoader();
-  const [fieldImage, robotImage] = await Promise.all([
+  const [fieldImage, robotImage, overlayImage] = await Promise.all([
     loadImage(request.fieldImageSrc).catch(() =>
       loadImage(publicUrl("/fields/decode.webp")),
     ),
     loadImage(publicUrl(request.robotImageSrc)).catch(() =>
       loadImage(publicUrl("/robot.png")),
     ),
+    request.fieldOverlaySrc
+      ? loadImage(request.fieldOverlaySrc).catch(() => null)
+      : null,
   ]);
 
   const background = document.createElement("canvas");
@@ -73,13 +78,16 @@ export async function renderPathGif(request: GifRequest): Promise<Blob> {
   const backgroundContext = background.getContext("2d");
   if (!backgroundContext) throw new Error("Failed to get canvas context");
   const overhang = toX(FIELD_IMAGE_OVERHANG);
-  backgroundContext.drawImage(
-    fieldImage,
-    -overhang,
-    -overhang,
-    size + 2 * overhang,
-    size + 2 * overhang,
-  );
+  for (const image of [fieldImage, overlayImage]) {
+    if (!image) continue;
+    backgroundContext.drawImage(
+      image,
+      -overhang,
+      -overhang,
+      size + 2 * overhang,
+      size + 2 * overhang,
+    );
+  }
   for (const path of request.paths) {
     drawPathLayer(backgroundContext, path, toX, toY, toX(LINE_WIDTH));
   }

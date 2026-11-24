@@ -43,7 +43,11 @@ export class GifExport {
     return [{ ...this.#project.doc, settings: this.#prefs.settings }];
   }
 
-  async run(fieldImageSrc: string, fieldPixels: number) {
+  async run(
+    fieldImageSrc: string,
+    fieldPixels: number,
+    fieldOverlaySrc: string | null = null,
+  ) {
     if (this.running) return;
     this.running = true;
     this.#cancelled = false;
@@ -53,6 +57,7 @@ export class GifExport {
       const blob = await renderPathGif({
         paths: this.#paths(),
         fieldImageSrc,
+        fieldOverlaySrc,
         robotImageSrc: this.#prefs.settings.robotImage || "/robot.png",
         fieldPixels,
         shouldCancel: () => this.#cancelled,

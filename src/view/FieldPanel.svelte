@@ -40,7 +40,7 @@
   import ToolRail from "./ToolRail.svelte";
   import FieldViewToggles from "./FieldViewToggles.svelte";
   import PlaybackBar from "./PlaybackBar.svelte";
-  import { fieldMapSource } from "./fieldMap";
+  import { fieldMapSource, fieldOverlaySource } from "./fieldMap";
   import { snapPoint } from "./snap";
   import { createViewport } from "./viewport";
 
@@ -78,6 +78,7 @@
   let doc = $derived(project.doc);
   let obstaclesOn = $derived(Boolean(settings.experimentalFeatures?.obstacles));
   let fieldMapSrc = $derived(fieldMapSource(settings, scheme));
+  let fieldOverlaySrc = $derived(fieldOverlaySource(settings, scheme));
   let robotImageSrc = $derived(settings.robotImage || "/robot.png");
   let loadedFieldMap = $state("");
   let loadedRobotImage = $state("");
@@ -381,10 +382,9 @@
         fieldMapName={settings.fieldMap}
         onSettled={() => (loadedFieldMap = fieldMapSrc)}
       />
-      {#if settings.fieldMap === "custom"}
-        <!-- ponytail: custom backgrounds get this season's structures; pick per season if another field needs it. -->
+      {#if fieldOverlaySrc}
         <FieldMapImage
-          src={`./fields/biobuzz-structures-${scheme}.webp`}
+          src={fieldOverlaySrc}
           fieldMapName="BIOBUZZ structures"
         />
       {/if}

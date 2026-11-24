@@ -18,7 +18,7 @@ import type { PanelLayout } from "../state/layout.svelte";
 import type { Playback } from "../state/playback.svelte";
 import type { Prefs } from "../state/prefs.svelte";
 import type { ProjectStore } from "../state/project.svelte";
-import { fieldMapSource } from "./fieldMap";
+import { fieldMapSource, fieldOverlaySource } from "./fieldMap";
 import {
   cycleGrid,
   toggleProtractor,
@@ -387,6 +387,7 @@ export function createActions(deps: ActionDeps): Action[] {
         void gif.run(
           fieldMapSource(prefs.settings, theme.resolved),
           deps.field().pixels,
+          fieldOverlaySource(prefs.settings, theme.resolved),
         ),
     },
 
