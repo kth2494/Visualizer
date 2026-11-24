@@ -19,8 +19,19 @@ export class ProjectStore {
   #transactionBase: ProjectDoc | null = null;
   #lastCoalesced: { key: string; at: number } | null = null;
 
-  canUndo = $derived(this.#undo.length > 0);
-  canRedo = $derived(this.#redo.length > 0);
+  #previewed = false;
+
+  /** Set while a cloud auto is open: undo goes through it instead. */
+  history = $state<SharedHistory | null>(null);
+  /** Called with every document this store produces (not with `replace`d ones). */
+  onChange: ((doc: ProjectDoc) => void) | null = null;
+
+  canUndo = $derived(
+    this.history ? this.history.canUndo : this.#undo.length > 0,
+  );
+  canRedo = $derived(
+    this.history ? this.history.canRedo : this.#redo.length > 0,
+  );
   dirty = $derived(this.doc !== this.#saved);
 
   constructor(doc: ProjectDoc) {
@@ -50,13 +61,20 @@ export class ProjectStore {
       options.coalesce === undefined
         ? null
         : { key: options.coalesce, at: now };
-    this.doc = next;
+    this.#set(next);
   }
 
   /** Show an edit without recording it; `commit` records everything since as one step. */
   preview(command: Command) {
-    this.#transactionBase ??= this.doc;
-    this.doc = command(this.doc);
+    if (!this.#transactionBase) {
+      this.history?.stop();
+      this.#transactionBase = this.doc;
+      this.#previewed = false;
+    }
+    const next = command(this.doc);
+    if (next === this.doc) return;
+    this.#previewed = true;
+    this.#set(next);
   }
 
   commit() {
@@ -67,12 +85,17 @@ export class ProjectStore {
   }
 
   cancel() {
-    if (this.#transactionBase) this.doc = this.#transactionBase;
+    if (this.#transactionBase && this.history) {
+      if (this.#previewed) this.history.cancel();
+    } else if (this.#transactionBase) {
+      this.#set(this.#transactionBase);
+    }
     this.#transactionBase = null;
   }
 
   undo() {
     this.commit();
+    if (this.history) return this.history.undo();
     const previous = this.#undo.at(-1);
     if (!previous) return;
     this.#undo = this.#undo.slice(0, -1);
@@ -82,6 +105,7 @@ export class ProjectStore {
 
   redo() {
     this.commit();
+    if (this.history) return this.history.redo();
     const next = this.#redo.at(-1);
     if (!next) return;
     this.#redo = this.#redo.slice(0, -1);
@@ -99,14 +123,38 @@ export class ProjectStore {
     if (options.saved ?? true) this.#saved = doc;
   }
 
+  /** Show a document someone else changed: no undo step, nothing unsaved. */
+  replace(doc: ProjectDoc) {
+    this.doc = doc;
+    this.#saved = doc;
+  }
+
   markSaved() {
     this.#saved = this.doc;
   }
 
+  #set(doc: ProjectDoc) {
+    this.doc = doc;
+    this.onChange?.(doc);
+  }
+
   #record(doc: ProjectDoc) {
+    if (this.history) return this.history.stop();
     this.#undo = [...this.#undo, doc].slice(-HISTORY_LIMIT);
     this.#redo = [];
   }
+}
+
+/** Undo for a shared document, where undo must skip other people's edits. */
+export interface SharedHistory {
+  canUndo: boolean;
+  canRedo: boolean;
+  undo(): void;
+  redo(): void;
+  /** End the current undo step. */
+  stop(): void;
+  /** Revert the step in progress, leaving no redo. */
+  cancel(): void;
 }
 
 const CONTEXT_KEY = Symbol("project");
