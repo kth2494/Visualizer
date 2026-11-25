@@ -118,6 +118,12 @@ export function createActions(deps: ActionDeps): Action[] {
       run: () => files.openJavaFromDisk(),
     },
     {
+      id: "file.openRoutine",
+      group: "File",
+      title: "Open routine (.json)…",
+      run: () => files.openRoutineFromDisk(),
+    },
+    {
       id: "file.cloud",
       group: "File",
       title: "Cloud autos…",

@@ -27,6 +27,7 @@
       "file.open",
       "file.import",
       "file.openJava",
+      "file.openRoutine",
       "file.cloud",
       "separator",
       "file.save",

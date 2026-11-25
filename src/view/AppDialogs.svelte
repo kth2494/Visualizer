@@ -59,7 +59,7 @@
 />
 
 <ActionsDialog bind:isOpen={dialogs.actions} />
-<SendToRobotDialog bind:isOpen={dialogs.robot} />
+<SendToRobotDialog bind:isOpen={dialogs.robot} {files} />
 {#if dialogs.cloud}
   <CloudAutosDialog
     bind:isOpen={dialogs.cloud}

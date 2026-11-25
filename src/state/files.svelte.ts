@@ -15,6 +15,7 @@ import {
 } from "../lib/files/localFiles";
 import { withActionDefaults } from "../lib/session/actionDefaults";
 import { importSequentialJava } from "../io/javaImport";
+import { importRoutine } from "../io/routineImport";
 import {
   loadSessionSnapshot,
   saveSessionSnapshot,
@@ -238,10 +239,45 @@ export class ProjectFiles {
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
+    const text = await file.text();
+    await this.#openConverted(file.name, (base) => {
+      const result = importSequentialJava(text, base);
+      // Named after the class, so exporting again suggests the same class name.
+      return result.ok ? { ...result, name: result.className } : result;
+    });
+  }
+
+  /** Open a routine file taken off the robot (or downloaded from Send to robot). */
+  openRoutineFromDisk() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      input.value = "";
+      if (file) await this.openRoutine(await file.text(), file.name);
+    };
+    input.click();
+  }
+
+  /** Open a routine's text, as a new unsaved project named after it. */
+  async openRoutine(text: string, label: string) {
+    await this.#openConverted(label, (base) => importRoutine(text, base));
+  }
+
+  /** Open something converted into a project, once unsaved work is let go. */
+  async #openConverted(
+    label: string,
+    convert: (
+      base: ProjectDoc,
+    ) =>
+      | { ok: true; doc: ProjectDoc; name: string; warnings: string[] }
+      | { ok: false; error: string },
+  ) {
     if (
       this.#project.dirty &&
       !(await confirmDialog({
-        title: `Open ${file.name}?`,
+        title: `Open ${label}?`,
         message: "Your unsaved changes will be lost.",
         confirmLabel: "Discard changes",
         danger: true,
@@ -249,8 +285,7 @@ export class ProjectFiles {
     ) {
       return;
     }
-    const result = importSequentialJava(
-      await file.text(),
+    const result = convert(
       withActionDefaults(
         createDefaultProject(
           this.#project.doc.robot,
@@ -263,12 +298,11 @@ export class ProjectFiles {
       return;
     }
     this.open(result.doc, { saved: false });
-    // Named after the class, so exporting again suggests the same class name.
-    currentFilePath.set(`${result.className}${PROJECT_EXTENSION}`);
-    // A dialog, not a toast: missing "code would be dropped" costs real work.
+    currentFilePath.set(`${result.name}${PROJECT_EXTENSION}`);
+    // A dialog, not a toast: a missed warning here costs real work.
     if (result.warnings.length) {
       await confirmDialog({
-        title: `Opened ${file.name} with warnings`,
+        title: `Opened ${label} with warnings`,
         message: result.warnings.join("\n"),
         confirmLabel: "OK",
       });

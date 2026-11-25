@@ -28,6 +28,7 @@ import fi.iki.elonen.NanoHTTPD;
  * /sdcard/FIRST/pedro/routines, so they survive restarts.
  *
  *   POST /pedro/routine    save one routine (JSON body, or a form upload)
+ *   GET  /pedro/routine?file=NAME.json   one saved routine, as sent
  *   GET  /pedro/routines   list saved routines
  *   GET  /pedro            page with the list and an upload form
  */
@@ -44,6 +45,10 @@ public final class PedroWeb {
         manager.register("/pedro/routine", session -> {
             if (session.getMethod() == NanoHTTPD.Method.OPTIONS) {
                 return cors(NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/plain", ""));
+            }
+            if (session.getMethod() == NanoHTTPD.Method.GET) {
+                java.util.List<String> file = session.getParameters().get("file");
+                return cors(json(load(file == null || file.isEmpty() ? null : file.get(0))));
             }
             if (session.getMethod() != NanoHTTPD.Method.POST) {
                 return cors(json(error("POST a routine here")));
@@ -110,12 +115,26 @@ public final class PedroWeb {
         }
     }
 
+    /** A saved routine's text, so the Visualizer can open it again. */
+    static String load(String fileName) {
+        // Only a plain file name, so nothing outside DIR can be read.
+        if (fileName == null || !fileName.matches("[^/\\\\]+\\.json")) return error("Give a routine file name");
+        File file = new File(DIR, fileName);
+        if (!file.isFile()) return error("No routine named " + fileName);
+        try {
+            return readFile(file);
+        } catch (IOException e) {
+            return error("Cannot read " + fileName + ": " + e.getMessage());
+        }
+    }
+
     private static JSONArray list() {
         JSONArray out = new JSONArray();
         for (File file : files()) {
             try {
                 JSONObject entry = new JSONObject();
                 entry.put("name", new JSONObject(readFile(file)).optString("name", file.getName()));
+                entry.put("file", file.getName());
                 entry.put("savedAt", file.lastModified());
                 out.put(entry);
             } catch (Exception ignored) {

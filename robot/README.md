@@ -6,6 +6,7 @@ once, together with `RobotActions.java` from the Visualizer
 
 - `PedroWeb.java` receives routines on the Robot Controller web server
   (`http://192.168.43.1:8080/pedro`) and keeps them in `FIRST/pedro/routines`.
+  It also hands a saved routine back, for **Load from robot** in the Visualizer.
 - `PedroRoutine.java` rebuilds the paths with the same Pedro calls the
   sequential export writes.
 - `PedroRoutineRun.java` is the "Pedro Routine (sent)" OpMode: pick a routine

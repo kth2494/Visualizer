@@ -1,6 +1,8 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
   import { useProject } from "../../state/project.svelte";
+  import type { ProjectFiles } from "../../state/files.svelte";
+  import { serializeProject } from "../../io";
   import { currentFilePath } from "../../stores";
   import { pathStem } from "../../utils/filename";
   import { downloadBlob } from "../../utils/download";
@@ -16,9 +18,10 @@
 
   interface Props {
     isOpen?: boolean;
+    files: ProjectFiles;
   }
 
-  let { isOpen = $bindable(false) }: Props = $props();
+  let { isOpen = $bindable(false), files }: Props = $props();
 
   const project = useProject();
   const ADDRESS_KEY = "pedro_robot_address";
@@ -28,11 +31,15 @@
   let address = $state(DEFAULT_ADDRESS);
   let status = $state<{ ok: boolean; text: string } | null>(null);
   let sending = $state(false);
+  let onRobot = $state<
+    { name: string; file?: string; savedAt: number }[] | null
+  >(null);
 
   $effect(() => {
     if (!isOpen) return;
     name = pathStem($currentFilePath) || "auto";
     status = null;
+    onRobot = null;
     try {
       address = localStorage.getItem(ADDRESS_KEY) || DEFAULT_ADDRESS;
     } catch {
@@ -40,8 +47,12 @@
     }
   });
 
+  // The project rides along, so Load from robot opens it intact.
   const routine = () =>
-    routineText(buildRoutine(project.doc, name.trim() || "auto"));
+    routineText({
+      ...buildRoutine(project.doc, name.trim() || "auto"),
+      project: JSON.parse(serializeProject(project.doc)),
+    });
 
   function rememberAddress() {
     try {
@@ -51,14 +62,67 @@
     }
   }
 
+  const robotHost = () =>
+    address
+      .trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "");
+
+  /** A GET from the robot's own web server. */
+  async function fromRobot(path: string) {
+    const response = await fetch(`http://${robotHost()}${path}`, {
+      signal: AbortSignal.timeout(5000),
+      targetAddressSpace: "local",
+    } as RequestInit);
+    return response.text();
+  }
+
+  const unreachable = (error: unknown) =>
+    `Could not reach the robot (${error instanceof Error ? error.message : error}). Join the robot Wi-Fi and check the address.`;
+
+  async function listOnRobot() {
+    rememberAddress();
+    sending = true;
+    status = null;
+    try {
+      onRobot = JSON.parse(await fromRobot("/pedro/routines"));
+    } catch (error) {
+      status = { ok: false, text: unreachable(error) };
+    } finally {
+      sending = false;
+    }
+  }
+
+  async function openFromRobot(entry: { name: string; file?: string }) {
+    if (!entry.file) {
+      status = {
+        ok: false,
+        text: "The robot app is too old to send routines back. Copy the new PedroWeb.java into TeamCode and reinstall it once.",
+      };
+      return;
+    }
+    sending = true;
+    status = null;
+    try {
+      const text = await fromRobot(
+        `/pedro/routine?file=${encodeURIComponent(entry.file)}`,
+      );
+      const reply = JSON.parse(text);
+      if (reply.ok === false) throw new Error(reply.error);
+      isOpen = false;
+      await files.openRoutine(text, entry.name);
+    } catch (error) {
+      status = { ok: false, text: unreachable(error) };
+    } finally {
+      sending = false;
+    }
+  }
+
   async function send() {
     rememberAddress();
     sending = true;
     status = null;
-    const host = address
-      .trim()
-      .replace(/^https?:\/\//, "")
-      .replace(/\/$/, "");
+    const host = robotHost();
     try {
       const response = await fetch(`http://${host}/pedro/routine`, {
         method: "POST",
@@ -155,6 +219,40 @@
       </Button>
       <Button size="sm" onclick={download}>Download routine</Button>
       <Button size="sm" onclick={saveActions}>Save RobotActions.java</Button>
+      <Button size="sm" onclick={listOnRobot} disabled={sending}>
+        Load from robot
+      </Button>
     </div>
+
+    {#if onRobot}
+      {#if onRobot.length === 0}
+        <p class="text-xs text-body">No routines on the robot yet.</p>
+      {:else}
+        <ul
+          class="flex flex-col divide-y divide-border"
+          aria-label="Routines on the robot"
+        >
+          {#each onRobot as entry (entry.file ?? entry.name)}
+            <li class="flex items-center gap-2 py-2">
+              <div class="mr-auto min-w-0">
+                <p class="truncate text-sm font-medium text-heading">
+                  {entry.name}
+                </p>
+                <p class="text-xs text-body">
+                  {new Date(entry.savedAt).toLocaleString()}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                disabled={sending}
+                onclick={() => openFromRobot(entry)}
+              >
+                Open
+              </Button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    {/if}
   </div>
 </Modal>

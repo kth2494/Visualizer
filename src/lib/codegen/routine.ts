@@ -22,15 +22,15 @@ import type {
 export const ROUTINE_FORMAT = "pedro-routine";
 export const ROUTINE_VERSION = 1;
 
-type RoutinePose = [x: number, y: number, headingDeg: number];
+export type RoutinePose = [x: number, y: number, headingDeg: number];
 
-type RoutineInterpolator =
+export type RoutineInterpolator =
   | { type: "constant"; pose: RoutinePose }
   | { type: "linear"; start: RoutinePose; end: RoutinePose }
   | { type: "tangent" }
   | { type: "facingPoint"; pose: RoutinePose };
 
-type RoutineHeading =
+export type RoutineHeading =
   | RoutineInterpolator
   | { type: "reverseTangent" }
   | {
@@ -62,6 +62,8 @@ export interface Routine {
   start: RoutinePose;
   paths: Record<string, RoutinePath>;
   steps: RoutineStep[];
+  /** The whole project as saved, so the routine can be opened again intact. */
+  project?: unknown;
 }
 
 export interface RoutineSource {

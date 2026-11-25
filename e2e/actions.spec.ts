@@ -125,6 +125,30 @@ test("send to robot posts the routine to the robot", async ({ page }) => {
   const routine = JSON.parse(posted);
   expect(routine.format).toBe("pedro-routine");
   expect(routine.steps[0]).toEqual({ path: "path1" });
+
+  // Load it back, as if a teammate had moved the end point to x = 40.
+  routine.project.lines[0].endPoint.x = 40;
+  await page.route("http://192.168.43.1:8080/pedro/routines", (route) =>
+    route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      json: [{ name: "auto", file: "auto.json", savedAt: Date.now() }],
+    }),
+  );
+  await page.route(
+    "http://192.168.43.1:8080/pedro/routine?file=auto.json",
+    (route) =>
+      route.fulfill({
+        headers: { "Access-Control-Allow-Origin": "*" },
+        json: routine,
+      }),
+  );
+  await page.getByRole("button", { name: "Load from robot" }).click();
+  await page
+    .getByRole("list", { name: "Routines on the robot" })
+    .getByRole("button", { name: "Open" })
+    .click();
+  await page.getByRole("treeitem").first().click();
+  await expect(page.getByLabel("End X", { exact: true })).toHaveValue("40");
 });
 
 test("an exported sequential command opens back for editing", async ({
