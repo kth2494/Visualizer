@@ -24,7 +24,14 @@ export interface PromptRequest extends BaseRequest {
   resolve: (value: string | null) => void;
 }
 
-export type DialogRequest = ConfirmRequest | PromptRequest;
+export interface ChoiceRequest extends BaseRequest {
+  kind: "choice";
+  /** One button each; the first is the default. */
+  choices: { value: string; label: string }[];
+  resolve: (value: string | null) => void;
+}
+
+export type DialogRequest = ConfirmRequest | PromptRequest | ChoiceRequest;
 
 /** The open confirm or prompt dialog; the host renders it. */
 export const dialogRequest = writable<DialogRequest | null>(null);
@@ -46,5 +53,20 @@ export function promptDialog(
 ): Promise<string | null> {
   return new Promise((resolve) =>
     dialogRequest.set({ value: "", ...options, kind: "prompt", resolve }),
+  );
+}
+
+/** Pick one of a few options. Resolves to its value, or null if dismissed. */
+export function chooseDialog<T extends string>(
+  options: Omit<ChoiceRequest, "kind" | "resolve" | "choices"> & {
+    choices: { value: T; label: string }[];
+  },
+): Promise<T | null> {
+  return new Promise((resolve) =>
+    dialogRequest.set({
+      ...options,
+      kind: "choice",
+      resolve: resolve as (value: string | null) => void,
+    }),
   );
 }

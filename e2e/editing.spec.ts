@@ -137,6 +137,7 @@ test("duplicate mirrored opens a mirrored copy", async ({ page }) => {
   await openApp(page);
   await page.getByRole("button", { name: "File" }).click();
   await page.getByRole("menuitem", { name: "Duplicate mirrored…" }).click();
+  await page.getByRole("button", { name: "Left ↔ right" }).click();
   await page.getByRole("button", { name: "Create" }).click();
   await expect(
     page.getByRole("button", { name: "path_mirrored.pp.json" }),
@@ -169,4 +170,18 @@ test("a custom field image keeps the BIOBUZZ structures on top", async ({
     "src",
     /\.\/fields\/biobuzz-structures-(light|dark)\.webp/,
   );
+});
+
+test("duplicate mirrored can flip up and down", async ({ page }) => {
+  await openApp(page);
+  await page.getByRole("button", { name: "File" }).click();
+  await page.getByRole("menuitem", { name: "Duplicate mirrored…" }).click();
+  await page.getByRole("button", { name: "Up ↕ down" }).click();
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(
+    page.getByRole("button", { name: "path_flipped.pp.json" }),
+  ).toBeVisible();
+  // y = 36 flips across 70.75 to 105.5; x stays.
+  await page.locator(ENDPOINT).click();
+  await expectSelectedPoint(page, "56.0, 105.5");
 });

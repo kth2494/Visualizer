@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { generateJavaCode } from "../src/lib/codegen";
-import { MIRROR_AXIS, mirrorProject } from "../src/model/mirror";
+import { MIRROR_AXIS, mirrorAngle, mirrorProject } from "../src/model/mirror";
 import { fixtures, loadProject } from "./support/fixtures";
 
 const POSE = /(\w+) = poseFactory\.of\(([-\d.e]+), ([-\d.e]+), ([-\d.e]+)\)/g;
@@ -88,5 +88,24 @@ describe("mirrorProject", () => {
 
   it("leaves the original untouched", () => {
     expect(doc).toEqual(original);
+  });
+});
+
+describe("flipping up and down", () => {
+  it.each(fixtures)("is its own inverse: $name", ({ text }) => {
+    const doc = loadProject(text);
+    expect(mirrorProject(mirrorProject(doc, "upDown"), "upDown")).toEqual(doc);
+  });
+
+  it("moves points across the horizontal center line and turns headings over", () => {
+    const doc = loadProject(fixtures[0].text);
+    const flipped = mirrorProject(doc, "upDown");
+    expect(flipped.startPoint.x).toBe(doc.startPoint.x);
+    expect(flipped.startPoint.y).toBeCloseTo(
+      2 * MIRROR_AXIS - doc.startPoint.y,
+    );
+    expect(mirrorAngle(30, "upDown")).toBe(-30);
+    expect(mirrorAngle(90, "upDown")).toBe(-90);
+    expect(mirrorAngle(0, "upDown")).toBe(0);
   });
 });

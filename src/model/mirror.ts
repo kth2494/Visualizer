@@ -14,45 +14,57 @@ import type {
  */
 export const MIRROR_AXIS = FIELD_SIZE / 2;
 
-const mirrorX = (x: number) => 2 * MIRROR_AXIS - x;
+/** Left ↔ right flips across the vertical center line, up ↔ down across the horizontal one. */
+export type Flip = "leftRight" | "upDown";
 
-export function mirrorAngle(degrees: number): number {
-  return 180 - degrees;
+// Rounded so 13.22 flips to 128.28, not 128.27999999999997, and back exactly.
+const across = (value: number) =>
+  Math.round((2 * MIRROR_AXIS - value) * 1e6) / 1e6;
+
+export function mirrorAngle(degrees: number, flip: Flip = "leftRight"): number {
+  if (flip === "leftRight") return 180 - degrees;
+  return degrees === 0 ? 0 : -degrees;
 }
 
-function mirrorPoint<T extends BasePoint>(point: T): T {
-  return { ...point, x: mirrorX(point.x) };
+function mirrorPoint<T extends BasePoint>(point: T, flip: Flip): T {
+  return flip === "leftRight"
+    ? { ...point, x: across(point.x) }
+    : { ...point, y: across(point.y) };
 }
 
 function mirrorPiecewiseSegment(
   segment: PiecewiseHeadingSegment,
+  flip: Flip,
 ): PiecewiseHeadingSegment {
   const parameters = segment.parameters;
   if (!parameters) return segment;
   const mirrored = { ...parameters };
   if (mirrored.startDeg !== undefined) {
-    mirrored.startDeg = mirrorAngle(mirrored.startDeg);
+    mirrored.startDeg = mirrorAngle(mirrored.startDeg, flip);
   }
   if (mirrored.endDeg !== undefined) {
-    mirrored.endDeg = mirrorAngle(mirrored.endDeg);
+    mirrored.endDeg = mirrorAngle(mirrored.endDeg, flip);
   }
   if (mirrored.degrees !== undefined) {
-    mirrored.degrees = mirrorAngle(mirrored.degrees);
+    mirrored.degrees = mirrorAngle(mirrored.degrees, flip);
   }
-  if (mirrored.point) mirrored.point = mirrorPoint(mirrored.point);
+  if (mirrored.point) mirrored.point = mirrorPoint(mirrored.point, flip);
   return { ...segment, parameters: mirrored };
 }
 
-export function mirrorHeading(heading: Heading): Heading {
+export function mirrorHeading(
+  heading: Heading,
+  flip: Flip = "leftRight",
+): Heading {
   switch (heading.type) {
     case "linear":
       return {
         ...heading,
-        startDeg: mirrorAngle(heading.startDeg),
-        endDeg: mirrorAngle(heading.endDeg),
+        startDeg: mirrorAngle(heading.startDeg, flip),
+        endDeg: mirrorAngle(heading.endDeg, flip),
       };
     case "constant":
-      return { ...heading, degrees: mirrorAngle(heading.degrees) };
+      return { ...heading, degrees: mirrorAngle(heading.degrees, flip) };
     // The tangent is mirrored with the path, so facing along it still holds.
     case "tangential":
       return heading;
@@ -61,46 +73,51 @@ export function mirrorHeading(heading: Heading): Heading {
         ...heading,
         piecewiseHeading: {
           ...heading.piecewiseHeading,
-          segments: heading.piecewiseHeading.segments.map(
-            mirrorPiecewiseSegment,
+          segments: heading.piecewiseHeading.segments.map((segment) =>
+            mirrorPiecewiseSegment(segment, flip),
           ),
         },
       };
   }
 }
 
-function mirrorPath(path: Path): Path {
+function mirrorPath(path: Path, flip: Flip): Path {
+  const point = <T extends BasePoint>(p: T) => mirrorPoint(p, flip);
   if (path.kind === "compound") {
     return {
       ...path,
-      ...(path.heading && { heading: mirrorHeading(path.heading) }),
-      segments: path.segments.map(mirrorPath),
+      ...(path.heading && { heading: mirrorHeading(path.heading, flip) }),
+      segments: path.segments.map((segment) => mirrorPath(segment, flip)),
     };
   }
   return {
     ...path,
-    heading: mirrorHeading(path.heading),
-    endPoint: mirrorPoint(path.endPoint),
-    controlPoints: path.controlPoints.map(mirrorPoint),
+    heading: mirrorHeading(path.heading, flip),
+    endPoint: point(path.endPoint),
+    controlPoints: path.controlPoints.map(point),
     ...(path.throughPoints && {
-      throughPoints: path.throughPoints.map(mirrorPoint),
+      throughPoints: path.throughPoints.map(point),
     }),
   };
 }
 
-/** The document reflected across the field's vertical center line. */
-export function mirrorProject(doc: ProjectDoc): ProjectDoc {
+/** The document reflected across the field's vertical (or horizontal) center line. */
+export function mirrorProject(
+  doc: ProjectDoc,
+  flip: Flip = "leftRight",
+): ProjectDoc {
+  const point = <T extends BasePoint>(p: T) => mirrorPoint(p, flip);
   return {
     ...doc,
     startPoint: {
-      ...mirrorPoint(doc.startPoint),
-      headingDeg: mirrorAngle(doc.startPoint.headingDeg),
+      ...point(doc.startPoint),
+      headingDeg: mirrorAngle(doc.startPoint.headingDeg, flip),
     },
-    lines: doc.lines.map(mirrorPath),
+    lines: doc.lines.map((line) => mirrorPath(line, flip)),
     shapes: doc.shapes.map((shape) => ({
       ...shape,
-      vertices: shape.vertices.map(mirrorPoint),
+      vertices: shape.vertices.map(point),
     })),
-    fieldPoints: doc.fieldPoints.map(mirrorPoint),
+    fieldPoints: doc.fieldPoints.map(point),
   };
 }

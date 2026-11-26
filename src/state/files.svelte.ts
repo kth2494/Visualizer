@@ -20,9 +20,9 @@ import {
   loadSessionSnapshot,
   saveSessionSnapshot,
 } from "../lib/session/sessionSnapshot";
-import { confirmDialog } from "../lib/dialog";
+import { chooseDialog, confirmDialog } from "../lib/dialog";
 import { askFileName } from "../lib/files/fileNames";
-import { mirrorProject } from "../model/mirror";
+import { mirrorProject, type Flip } from "../model/mirror";
 import { showToast } from "../lib/toast";
 import { activePaths, currentFilePath } from "../stores";
 import * as browserFileStore from "../utils/browserFileStore";
@@ -186,11 +186,20 @@ export class ProjectFiles {
     }
   }
 
-  /** Save a copy mirrored across the field's center line as a new file, and open it. */
+  /** Save a copy flipped left ↔ right or up ↔ down as a new file, and open it. */
   async duplicateMirrored() {
+    const flip = await chooseDialog<Flip>({
+      title: "Duplicate mirrored",
+      message: "Which way should the copy be flipped?",
+      choices: [
+        { value: "leftRight", label: "Left ↔ right" },
+        { value: "upDown", label: "Up ↕ down" },
+      ],
+    });
+    if (!flip) return;
     const name = await askFileName({
       title: "Duplicate mirrored",
-      value: `${pathStem(get(currentFilePath)) || "path"}_mirrored`,
+      value: `${pathStem(get(currentFilePath)) || "path"}_${flip === "leftRight" ? "mirrored" : "flipped"}`,
       confirmLabel: "Create",
     });
     if (!name) return;
@@ -206,7 +215,7 @@ export class ProjectFiles {
       ) {
         return;
       }
-      const mirrored = mirrorProject(this.current());
+      const mirrored = mirrorProject(this.current(), flip);
       await browserFileStore.writeFile(name, serializeProject(mirrored));
       this.open(mirrored);
       currentFilePath.set(name);

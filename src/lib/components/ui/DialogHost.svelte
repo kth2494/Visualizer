@@ -29,7 +29,16 @@
     if (!request) return;
     dialogRequest.set(null);
     if (request.kind === "confirm") request.resolve(confirmed);
+    else if (request.kind === "choice")
+      request.resolve(confirmed ? request.choices[0].value : null);
     else request.resolve(confirmed ? value.trim() : null);
+  }
+
+  function choose(choice: string) {
+    const request = $dialogRequest;
+    if (request?.kind !== "choice") return;
+    dialogRequest.set(null);
+    request.resolve(choice);
   }
 
   function submit(event: SubmitEvent) {
@@ -83,15 +92,23 @@
 
       <div class="flex justify-end gap-2">
         <Button variant="ghost" onclick={() => finish(false)}>Cancel</Button>
-        <Button
-          type="submit"
-          variant={shown.kind === "confirm" && shown.danger
-            ? "danger"
-            : "primary"}
-          disabled={problem !== null}
-        >
-          {shown.confirmLabel ?? "OK"}
-        </Button>
+        {#if shown.kind === "choice"}
+          {#each shown.choices as choice (choice.value)}
+            <Button variant="primary" onclick={() => choose(choice.value)}>
+              {choice.label}
+            </Button>
+          {/each}
+        {:else}
+          <Button
+            type="submit"
+            variant={shown.kind === "confirm" && shown.danger
+              ? "danger"
+              : "primary"}
+            disabled={problem !== null}
+          >
+            {shown.confirmLabel ?? "OK"}
+          </Button>
+        {/if}
       </div>
     </form>
   {/if}
