@@ -8,6 +8,9 @@ const calls = vi.hoisted(() => ({
   createRoom: vi.fn(),
   sendYjsBinaryUpdate: vi.fn(),
   deleteRoom: vi.fn(),
+  getYjsDocumentAsBinaryUpdate: vi.fn(
+    async () => new Uint8Array([1, 2, 3]).buffer,
+  ),
   getRooms: vi.fn(async () => ({
     nextCursor: null,
     data: [
@@ -26,6 +29,7 @@ vi.mock("@liveblocks/node", () => ({
     createRoom = calls.createRoom;
     sendYjsBinaryUpdate = calls.sendYjsBinaryUpdate;
     deleteRoom = calls.deleteRoom;
+    getYjsDocumentAsBinaryUpdate = calls.getYjsDocumentAsBinaryUpdate;
     getRooms = calls.getRooms;
     prepareSession = () => ({
       FULL_ACCESS: ["*:write"],
@@ -96,6 +100,23 @@ describe("cloud api", () => {
     const seeded = new Y.Doc();
     Y.applyUpdate(seeded, calls.sendYjsBinaryUpdate.mock.calls[0][1]);
     expect(readDoc(seeded)).toEqual(JSON.parse(JSON.stringify(doc)));
+  });
+
+  it("copies an auto into a new room", async () => {
+    const response = await autos.POST(
+      request("POST", { name: "오토1 copy", copyOf: "auto:1" }),
+    );
+    const { id } = await response.json();
+    expect(id).not.toBe("auto:1");
+    expect(calls.getYjsDocumentAsBinaryUpdate).toHaveBeenCalledWith("auto:1");
+    expect(calls.sendYjsBinaryUpdate).toHaveBeenCalledWith(
+      id,
+      new Uint8Array([1, 2, 3]),
+    );
+    const refused = await autos.POST(
+      request("POST", { name: "x", copyOf: "other" }),
+    );
+    expect(refused.status).toBe(400);
   });
 
   it("deletes only auto rooms", async () => {

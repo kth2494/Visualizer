@@ -36,6 +36,13 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   await expect(list).toContainText("오토1");
   expect(requests[0]).toMatchObject({ method: "GET", password: "bees" });
 
+  await list.getByRole("button", { name: "Duplicate" }).click();
+  await page.getByRole("button", { name: "Duplicate" }).last().click();
+  await expect
+    .poll(() => requests.find((r) => r.method === "POST")?.body)
+    .toEqual({ name: "오토1 copy", copyOf: "auto:1" });
+  requests.length = 0;
+
   await list.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete" }).last().click();
   await expect(page.getByText("No cloud autos yet.")).toBeVisible();

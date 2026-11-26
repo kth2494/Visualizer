@@ -4,6 +4,7 @@
   import type { CloudAutos } from "../../cloud/cloud.svelte";
   import {
     CloudCancelled,
+    copyAuto,
     createAuto,
     deleteAuto,
     listAutos,
@@ -97,6 +98,18 @@
         currentFilePath.set(null);
         isOpen = false;
       });
+    });
+
+  const duplicate = (auto: CloudAuto) =>
+    attempt(async () => {
+      const name = await promptDialog({
+        title: "Duplicate cloud auto",
+        value: `${auto.name} copy`,
+        confirmLabel: "Duplicate",
+      });
+      if (!name) return;
+      await copyAuto(auto.id, name);
+      await refresh();
     });
 
   const rename = (auto: CloudAuto) =>
@@ -202,6 +215,9 @@
             </div>
             <Button size="sm" disabled={busy} onclick={() => open(auto)}>
               Open
+            </Button>
+            <Button size="sm" disabled={busy} onclick={() => duplicate(auto)}>
+              Duplicate
             </Button>
             <Button size="sm" disabled={busy} onclick={() => rename(auto)}>
               Rename

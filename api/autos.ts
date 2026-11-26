@@ -36,22 +36,33 @@ export async function GET(request: Request): Promise<Response> {
   );
 }
 
-/** Make a room and put the project in it, so nobody opens it empty. */
+/**
+ * Make a room and put a project in it, so nobody opens it empty: the `doc`
+ * sent, or a copy of the auto `copyOf`.
+ */
 export async function POST(request: Request): Promise<Response> {
   if (!allowed(request)) return unauthorized();
-  const { name, doc } = await body(request);
+  const { name, doc, copyOf } = await body(request);
   const clean = cleanName(name);
   const project = doc as ProjectDoc | undefined;
-  if (!clean || !project || !Array.isArray(project.lines)) {
+  const source = isAutoId(copyOf) ? copyOf : null;
+  const valid =
+    copyOf === undefined
+      ? Boolean(project && Array.isArray(project.lines))
+      : source !== null;
+  if (!clean || !valid) {
     return json({ error: "A name and a project are required" }, 400);
   }
-  const id = `${AUTO_PREFIX}${randomUUID()}`;
   const client = liveblocks();
+  const content = source
+    ? new Uint8Array(await client.getYjsDocumentAsBinaryUpdate(source))
+    : docUpdate(project!);
+  const id = `${AUTO_PREFIX}${randomUUID()}`;
   await client.createRoom(id, {
     defaultAccesses: [],
     metadata: { name: clean },
   });
-  await client.sendYjsBinaryUpdate(id, docUpdate(project));
+  await client.sendYjsBinaryUpdate(id, content);
   return json({ id });
 }
 

@@ -84,6 +84,8 @@ async function call<T>(method: string, body?: unknown): Promise<T> {
 export const listAutos = () => call<CloudAuto[]>("GET");
 export const createAuto = (name: string, doc: ProjectDoc) =>
   call<{ id: string }>("POST", { name, doc });
+export const copyAuto = (id: string, name: string) =>
+  call<{ id: string }>("POST", { name, copyOf: id });
 export const renameAuto = (id: string, name: string) =>
   call("PATCH", { id, name });
 export const deleteAuto = (id: string) => call("DELETE", { id });
