@@ -19,6 +19,9 @@
   import { pathStem } from "../../utils/filename";
   import { chooseDialog, confirmDialog, promptDialog } from "../dialog";
   import { mirrorProject } from "../../model/mirror";
+  import { javaFilesFor } from "../../cloud/exportJava";
+  import { zipFiles } from "../../utils/zip";
+  import { downloadBlob } from "../../utils/download";
   import { withActionDefaults } from "../session/actionDefaults";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -132,6 +135,18 @@
       await refresh();
     });
 
+  /** Every auto as its sequential command OpMode, in one zip for TeamCode/auto. */
+  const exportAll = () =>
+    attempt(async () => {
+      if (!autos?.length) return;
+      const list = autos;
+      const docs = await Promise.all(list.map((auto) => fetchAuto(auto.id)));
+      const files = javaFilesFor(
+        list.map((auto, i) => ({ name: auto.name, doc: docs[i] })),
+      );
+      downloadBlob(zipFiles(files), "cloud-autos-java.zip");
+    });
+
   const rename = (auto: CloudAuto) =>
     attempt(async () => {
       const name = await promptDialog({
@@ -207,6 +222,9 @@
           )}
       >
         New empty
+      </Button>
+      <Button size="sm" disabled={busy || !autos?.length} onclick={exportAll}>
+        Export all as Java (.zip)
       </Button>
     </div>
 

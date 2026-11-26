@@ -58,6 +58,18 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
     .toEqual({ name: "오토1 copy", copyOf: "auto:1" });
   requests.length = 0;
 
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Export all as Java (.zip)" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("cloud-autos-java.zip");
+  const zip = (await (await download.createReadStream()).toArray())
+    .map((chunk) => chunk.toString("latin1"))
+    .join("");
+  expect(zip).toContain("Path1.java");
+  expect(zip).toContain("public class Path1");
+  requests.length = 0;
+
   // Flipped both ways: the start lands across the field's center, turned around.
   await list.getByRole("button", { name: "Duplicate" }).click();
   await page.getByRole("button", { name: "Both" }).click();
