@@ -6,6 +6,8 @@ export interface CloudAuto {
   name: string;
   /** ISO time of the last connection, or of creation. */
   updatedAt: string;
+  /** ISO time it was made. */
+  createdAt?: string;
 }
 
 const PASSWORD_KEY = "pedro_team_password";

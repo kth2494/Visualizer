@@ -26,6 +26,7 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import IconButton from "./ui/IconButton.svelte";
+  import { fieldClass, labelClass } from "./ui/styles";
 
   interface Props {
     isOpen?: boolean;
@@ -38,6 +39,50 @@
 
   const project = useProject();
   let autos = $state<CloudAuto[] | null>(null);
+
+  const SORT_KEY = "pedro_cloud_sort";
+  type Compare = (a: CloudAuto, b: CloudAuto) => number;
+  const byName: Compare = (a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true });
+  const byCreated: Compare = (a, b) =>
+    (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+  const SORTS = {
+    recent: {
+      label: "Recently opened",
+      compare: ((a, b) => b.updatedAt.localeCompare(a.updatedAt)) as Compare,
+    },
+    name: { label: "Name (A → Z)", compare: byName },
+    nameDesc: {
+      label: "Name (Z → A)",
+      compare: ((a, b) => byName(b, a)) as Compare,
+    },
+    newest: {
+      label: "Newest first",
+      compare: ((a, b) => byCreated(b, a)) as Compare,
+    },
+    oldest: { label: "Oldest first", compare: byCreated },
+  };
+  type Sort = keyof typeof SORTS;
+  let sort = $state<Sort>(
+    (() => {
+      try {
+        const saved = localStorage.getItem(SORT_KEY);
+        return saved && saved in SORTS ? (saved as Sort) : "recent";
+      } catch {
+        return "recent";
+      }
+    })(),
+  );
+  let sorted = $derived(autos ? [...autos].sort(SORTS[sort].compare) : null);
+
+  function chooseSort(next: Sort) {
+    sort = next;
+    try {
+      localStorage.setItem(SORT_KEY, next);
+    } catch {
+      // Private windows: back to the default next time.
+    }
+  }
   let error = $state("");
   let busy = $state(false);
 
@@ -58,9 +103,7 @@
 
   const refresh = () =>
     attempt(async () => {
-      autos = (await listAutos()).sort((a, b) =>
-        b.updatedAt.localeCompare(a.updatedAt),
-      );
+      autos = await listAutos();
     });
 
   onMount(() => void refresh());
@@ -232,13 +275,28 @@
       <p role="alert" class="text-xs text-red-500">{error}</p>
     {/if}
 
-    {#if autos === null}
+    {#if autos?.length}
+      <label class="flex items-center gap-2 self-end">
+        <span class={labelClass}>Sort by</span>
+        <select
+          class={fieldClass}
+          value={sort}
+          onchange={(event) => chooseSort(event.currentTarget.value as Sort)}
+        >
+          {#each Object.entries(SORTS) as [value, option] (value)}
+            <option {value}>{option.label}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
+
+    {#if autos === null || sorted === null}
       <p class="text-sm text-body">{busy ? "Loading…" : ""}</p>
     {:else if autos.length === 0}
       <p class="text-sm text-body">No cloud autos yet.</p>
     {:else}
       <ul class="flex flex-col divide-y divide-border" aria-label="Cloud autos">
-        {#each autos as auto (auto.id)}
+        {#each sorted as auto (auto.id)}
           <li class="flex items-center gap-2 py-2">
             <div class="mr-auto min-w-0">
               <p class="truncate text-sm font-medium text-heading">

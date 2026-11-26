@@ -6,7 +6,18 @@ test.use({ serviceWorkers: "block" });
 test("lists, deletes and uploads cloud autos", async ({ page }) => {
   const requests: { method: string; body: unknown; password: string }[] = [];
   let autos = [
-    { id: "auto:1", name: "오토1", updatedAt: "2026-11-01T00:00:00Z" },
+    {
+      id: "auto:1",
+      name: "오토1",
+      updatedAt: "2026-11-01T00:00:00Z",
+      createdAt: "2026-10-01T00:00:00Z",
+    },
+    {
+      id: "auto:3",
+      name: "오토10",
+      updatedAt: "2026-11-02T00:00:00Z",
+      createdAt: "2026-09-01T00:00:00Z",
+    },
   ];
   const stored = {
     startPoint: { x: 10, y: 20, headingDeg: 90 },
@@ -48,9 +59,14 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
 
   const list = page.getByRole("list", { name: "Cloud autos" });
   await expect(list).toContainText("오토1");
+  const names = () => list.locator("li p:first-child").allInnerTexts();
+  // Recently opened first, then by name with 1 before 10.
+  expect(await names()).toEqual(["오토10", "오토1"]);
+  await page.getByLabel("Sort by").selectOption("name");
+  expect(await names()).toEqual(["오토1", "오토10"]);
   expect(requests[0]).toMatchObject({ method: "GET", password: "bees" });
 
-  await list.getByRole("button", { name: "Duplicate" }).click();
+  await list.getByRole("button", { name: "Duplicate" }).first().click();
   await page.getByRole("button", { name: "As is" }).click();
   await page.getByRole("button", { name: "Duplicate" }).last().click();
   await expect
@@ -71,7 +87,7 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   requests.length = 0;
 
   // Flipped both ways: the start lands across the field's center, turned around.
-  await list.getByRole("button", { name: "Duplicate" }).click();
+  await list.getByRole("button", { name: "Duplicate" }).first().click();
   await page.getByRole("button", { name: "Both" }).click();
   await page.getByRole("button", { name: "Duplicate" }).last().click();
   await expect
@@ -82,7 +98,7 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
     });
   requests.length = 0;
 
-  await list.getByRole("button", { name: "Delete" }).click();
+  await list.getByRole("button", { name: "Delete" }).first().click();
   await page.getByRole("button", { name: "Delete" }).last().click();
   await expect(page.getByText("No cloud autos yet.")).toBeVisible();
   expect(requests.find((r) => r.method === "DELETE")?.body).toEqual({

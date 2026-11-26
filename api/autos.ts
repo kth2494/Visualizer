@@ -60,6 +60,7 @@ export async function GET(request: Request): Promise<Response> {
       updatedAt: new Date(
         room.lastConnectionAt ?? room.createdAt,
       ).toISOString(),
+      createdAt: new Date(room.createdAt).toISOString(),
     })),
   );
 }
