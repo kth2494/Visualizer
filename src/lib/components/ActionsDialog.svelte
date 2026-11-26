@@ -224,7 +224,11 @@
             </label>
           </div>
         {:else}
-          {@render reachField(i, action.reachCm, "Arms out while driving (cm)")}
+          {@render reachField(
+            i,
+            action.reachCm,
+            "Arms out from this path (cm)",
+          )}
           {#each [["start", "Start code"], ["stop", "Stop code"]] as const as [key, label] (key)}
             <label class="flex flex-col gap-1">
               <span class={labelClass}>{label}</span>

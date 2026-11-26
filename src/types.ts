@@ -96,7 +96,7 @@ export type ActionDef =
       kind: "during";
       start: string;
       stop: string;
-      /** How far the arms stick out in front while driving, in cm; unset leaves them. */
+      /** How far the arms stick out in front from its path on, in cm; unset leaves them. */
       reachCm?: number;
     };
 

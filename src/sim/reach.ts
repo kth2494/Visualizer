@@ -6,8 +6,8 @@ const CM_PER_INCH = 2.54;
 /**
  * How far the arms stick out in front at `seconds`, in inches. Timed actions
  * run once a top-level path ends, so each one that sets a reach takes effect
- * as its path finishes; the latest one wins. A while-driving action's reach
- * holds only while its segment is driven, then the arms go back.
+ * as its path finishes. A while-driving action's reach takes effect as its
+ * segment starts. Either way it stays until another action changes it.
  */
 export function reachAt(
   seconds: number,
@@ -40,19 +40,13 @@ export function reachAt(
 
   let reachCm = 0;
   for (const event of timeline) {
-    if (event.endTime > seconds) {
-      const driving =
-        event.type === "travel" && event.startTime <= seconds && event.lineId
-          ? reachDuring.get(event.lineId)
-          : undefined;
-      if (driving !== undefined) reachCm = driving;
-      break;
-    }
-    const set =
-      event.type === "travel" && event.lineId
-        ? reachAfter.get(event.lineId)
-        : undefined;
-    if (set !== undefined) reachCm = set;
+    if (event.startTime > seconds) break;
+    const lineId = event.type === "travel" ? event.lineId : undefined;
+    const driving = lineId ? reachDuring.get(lineId) : undefined;
+    if (driving !== undefined) reachCm = driving;
+    if (event.endTime > seconds) break;
+    const after = lineId ? reachAfter.get(lineId) : undefined;
+    if (after !== undefined) reachCm = after;
   }
   return Math.max(0, reachCm) / CM_PER_INCH;
 }

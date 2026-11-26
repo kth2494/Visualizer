@@ -523,8 +523,8 @@ describe("arms that stick out after an action", () => {
   });
 });
 
-describe("arms out only while driving", () => {
-  it("holds a while-driving reach for its segment, then goes back", () => {
+describe("arms out from a while-driving action", () => {
+  it("puts the arms out as its path starts and keeps them out", () => {
     const doc = {
       ...project(
         { x: 20, y: 72 },
@@ -555,6 +555,7 @@ describe("arms out only while driving", () => {
     const at = (t: number) => reachAt(t, timeline, doc.lines, doc.actions);
     expect(at(first.startTime)).toBeCloseTo(2);
     expect(at((first.startTime + first.endTime) / 2)).toBeCloseTo(2);
-    expect(at(second.startTime + 0.01)).toBe(0);
+    expect(at(second.startTime + 0.01)).toBeCloseTo(2);
+    expect(at(first.startTime - 0.01)).toBe(0);
   });
 });
