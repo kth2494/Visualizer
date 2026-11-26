@@ -3,7 +3,16 @@ import { LiveblocksYjsProvider } from "@liveblocks/yjs";
 import * as Y from "yjs";
 import { showToast } from "../lib/toast";
 import type { ProjectStore } from "../state/project.svelte";
-import { readDoc, ROOT } from "./binding";
+import {
+  joinedLibrary,
+  readDoc,
+  readTeam,
+  ROOT,
+  TEAM_ROOM,
+  withLibrary,
+  writeDoc,
+  writeTeam,
+} from "./binding";
 import { displayName, refused, setUrl, teamPassword } from "./client";
 import { bindProject } from "./session";
 
@@ -57,6 +66,12 @@ export class CloudAutos {
     });
     const ydoc = new Y.Doc();
     const provider = new LiveblocksYjsProvider(room, ydoc);
+    // The team's robot actions and hardware, shared by every auto.
+    const library = this.#liveblocks().enterRoom(TEAM_ROOM, {
+      initialPresence: {},
+    });
+    const team = new Y.Doc();
+    const teamProvider = new LiveblocksYjsProvider(library.room, team);
     const unsubscribe = [
       room.subscribe("status", (status) => (this.status = status)),
       room.subscribe("others", (others) => {
@@ -68,21 +83,28 @@ export class CloudAutos {
     const close = () => {
       unsubscribe.forEach((stop) => stop());
       provider.destroy();
+      teamProvider.destroy();
       leave();
+      library.leave();
       ydoc.destroy();
+      team.destroy();
     };
     this.#leave = close;
     this.current = { id, name: name || "Cloud auto" };
 
-    const synced = await new Promise<boolean>((resolve) => {
-      if (provider.synced) return resolve(true);
-      const timer = setTimeout(() => resolve(false), SYNC_TIMEOUT_MS);
-      provider.on("sync", (done: boolean) => {
-        if (!done) return;
-        clearTimeout(timer);
-        resolve(true);
+    const whenSynced = (p: LiveblocksYjsProvider) =>
+      new Promise<boolean>((resolve) => {
+        if (p.synced) return resolve(true);
+        const timer = setTimeout(() => resolve(false), SYNC_TIMEOUT_MS);
+        p.on("sync", (done: boolean) => {
+          if (!done) return;
+          clearTimeout(timer);
+          resolve(true);
+        });
       });
-    });
+    const synced = (
+      await Promise.all([whenSynced(provider), whenSynced(teamProvider)])
+    ).every(Boolean);
     if (this.#leave !== close) return; // another open or leave won the race
     if (!synced || ydoc.getMap(ROOT).size === 0) {
       this.leave();
@@ -95,8 +117,14 @@ export class CloudAutos {
       return;
     }
 
-    this.#project.load(readDoc(ydoc));
-    const unbind = bindProject(this.#project, ydoc);
+    // Join the library: nothing this auto had is lost, and from now on its
+    // actions live only there. Not undoable: it is setup, not an edit.
+    const own = readDoc(ydoc);
+    const joined = joinedLibrary(readTeam(team), own);
+    writeTeam(team, joined, "join");
+    writeDoc(ydoc, { ...own, actions: undefined, hardware: undefined }, "join");
+    this.#project.load(withLibrary(own, joined));
+    const unbind = bindProject(this.#project, ydoc, team);
     this.#leave = () => {
       unbind();
       close();

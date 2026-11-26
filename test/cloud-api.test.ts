@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
-import { docUpdate, readDoc } from "../src/cloud/binding";
+import { docUpdate, readDoc, writeTeam } from "../src/cloud/binding";
 import { createDefaultProject } from "../src/io";
 import { DEFAULT_ROBOT } from "./support/fixtures";
 
@@ -77,6 +77,7 @@ describe("cloud api", () => {
     );
     expect(await response.json()).toEqual({ token: "t" });
     expect(calls.allow).toHaveBeenCalledWith("auto:*", ["*:write"]);
+    expect(calls.allow).toHaveBeenCalledWith("team:library", ["*:write"]);
   });
 
   it("lists autos by name", async () => {
@@ -131,6 +132,31 @@ describe("cloud api", () => {
     );
     expect((await response.json()).doc).toEqual(
       JSON.parse(JSON.stringify(doc)),
+    );
+  });
+
+  it("hands an auto back with the team's actions", async () => {
+    const doc = createDefaultProject(DEFAULT_ROBOT, "biobuzz.webp");
+    const shoot = {
+      id: "shoot",
+      name: "발사",
+      kind: "timed" as const,
+      steps: [],
+      durationMs: 0,
+    };
+    const team = new Y.Doc();
+    writeTeam(team, { actions: [shoot] });
+    calls.getYjsDocumentAsBinaryUpdate
+      .mockResolvedValueOnce(docUpdate(doc).slice().buffer)
+      .mockResolvedValueOnce(Y.encodeStateAsUpdate(team).slice().buffer);
+    const response = await autos.GET(
+      new Request("https://x/api/autos?id=auto:1", {
+        headers: { "x-team-password": "bees" },
+      }),
+    );
+    expect((await response.json()).doc.actions).toEqual([shoot]);
+    expect(calls.getYjsDocumentAsBinaryUpdate).toHaveBeenLastCalledWith(
+      "team:library",
     );
   });
 

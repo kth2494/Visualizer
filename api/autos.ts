@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import * as Y from "yjs";
-import { docUpdate, readDoc } from "../src/cloud/binding.js";
+import {
+  docUpdate,
+  joinedLibrary,
+  readDoc,
+  readTeam,
+  TEAM_ROOM,
+  withLibrary,
+} from "../src/cloud/binding.js";
 import type { CloudAuto } from "../src/cloud/client";
 import type { ProjectDoc } from "../src/io";
 import {
@@ -25,12 +32,21 @@ export async function GET(request: Request): Promise<Response> {
   const id = new URL(request.url).searchParams.get("id");
   if (id !== null) {
     if (!isAutoId(id)) return json({ error: "Bad request" }, 400);
-    const ydoc = new Y.Doc();
-    Y.applyUpdate(
-      ydoc,
-      new Uint8Array(await liveblocks().getYjsDocumentAsBinaryUpdate(id)),
-    );
-    return json({ doc: readDoc(ydoc) });
+    const client = liveblocks();
+    const load = async (room: string) => {
+      const ydoc = new Y.Doc();
+      Y.applyUpdate(
+        ydoc,
+        new Uint8Array(await client.getYjsDocumentAsBinaryUpdate(room)),
+      );
+      return ydoc;
+    };
+    const doc = readDoc(await load(id));
+    // No library yet (nobody has opened an auto since): the auto's own actions stand.
+    const team = await load(TEAM_ROOM).catch(() => null);
+    return json({
+      doc: team ? withLibrary(doc, joinedLibrary(readTeam(team), doc)) : doc,
+    });
   }
   // ponytail: one page of 100 autos; page with nextCursor if the team ever has more.
   const rooms = await liveblocks().getRooms({

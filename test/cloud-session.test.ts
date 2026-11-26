@@ -3,7 +3,7 @@ import * as Y from "yjs";
 import { docUpdate, readDoc } from "../src/cloud/binding";
 import { bindProject } from "../src/cloud/session";
 import { createDefaultProject } from "../src/io";
-import { addSegment, updatePoint } from "../src/model/commands";
+import { addSegment, setActions, updatePoint } from "../src/model/commands";
 import { ProjectStore } from "../src/state/project.svelte";
 import type { AtomicPath } from "../src/types";
 import { createSegment } from "../src/utils/normalize";
@@ -70,5 +70,62 @@ describe("a shared auto", () => {
     alice.apply(move(first, { x: 3 }));
     expect(alice.dirty).toBe(false);
     expect(bob.dirty).toBe(false);
+  });
+});
+
+describe("the team library", () => {
+  /** Alice in auto A, Bob in auto B; both see the same library. */
+  function team() {
+    const project = (x: number) =>
+      addSegment(createSegment(x, 40))(
+        createDefaultProject(DEFAULT_ROBOT, "biobuzz.webp"),
+      );
+    const [a, b] = [project(30), project(90)].map((doc) => {
+      const y = new Y.Doc();
+      Y.applyUpdate(y, docUpdate(doc));
+      return y;
+    });
+    const [teamA, teamB] = [new Y.Doc(), new Y.Doc()];
+    teamA.on("update", (u: Uint8Array, origin) => {
+      if (origin !== "remote") Y.applyUpdate(teamB, u, "remote");
+    });
+    teamB.on("update", (u: Uint8Array, origin) => {
+      if (origin !== "remote") Y.applyUpdate(teamA, u, "remote");
+    });
+    const alice = new ProjectStore(readDoc(a));
+    const bob = new ProjectStore(readDoc(b));
+    bindProject(alice, a, teamA);
+    bindProject(bob, b, teamB);
+    return { alice, bob, a, b };
+  }
+  const shoot = {
+    id: "shoot",
+    name: "발사",
+    kind: "timed" as const,
+    steps: [],
+    durationMs: 500,
+  };
+
+  it("shows an action added in one auto in every other", () => {
+    const { alice, bob, a } = team();
+    alice.apply(setActions([shoot]));
+    expect(bob.doc.actions).toEqual([shoot]);
+    // The auto itself keeps only its paths.
+    expect(readDoc(a).actions).toBeUndefined();
+  });
+
+  it("undoes path and action edits one step at a time, newest first", () => {
+    const { alice, bob } = team();
+    const lineId = alice.doc.lines[0].id;
+    alice.apply(setActions([shoot]));
+    alice.apply(updatePoint({ kind: "path", lineId, index: 0 }, { x: 12 }));
+    alice.undo();
+    expect((alice.doc.lines[0] as AtomicPath).endPoint.x).not.toBe(12);
+    expect(bob.doc.actions).toEqual([shoot]);
+    alice.undo();
+    expect(bob.doc.actions ?? []).toEqual([]);
+    expect(alice.canUndo).toBe(false);
+    alice.redo();
+    expect(bob.doc.actions).toEqual([shoot]);
   });
 });

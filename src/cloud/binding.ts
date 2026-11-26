@@ -1,5 +1,6 @@
 import * as Y from "yjs";
 import type { ProjectDoc } from "../io";
+import type { ActionDef, HardwareCode } from "../types";
 
 /**
  * A project as a Yjs document, so people editing it at once merge field by
@@ -127,4 +128,56 @@ export function docUpdate(doc: ProjectDoc): Uint8Array {
   const ydoc = new Y.Doc();
   writeDoc(ydoc, doc);
   return Y.encodeStateAsUpdate(ydoc);
+}
+
+/** The room every cloud auto shares its robot actions and hardware code through. */
+export const TEAM_ROOM = "team:library";
+const TEAM_ROOT = "team";
+
+export interface TeamLibrary {
+  actions?: ActionDef[];
+  hardware?: HardwareCode;
+}
+
+export function writeTeam(ydoc: Y.Doc, library: TeamLibrary, origin?: unknown) {
+  ydoc.transact(() => {
+    syncMap(ydoc.getMap(TEAM_ROOT), library as unknown as Plain);
+  }, origin);
+}
+
+export function readTeam(ydoc: Y.Doc): TeamLibrary {
+  return ydoc.getMap(TEAM_ROOT).toJSON() as TeamLibrary;
+}
+
+export const teamRoot = (ydoc: Y.Doc) => ydoc.getMap(TEAM_ROOT);
+
+/**
+ * The library once this auto has joined it. An empty library starts as this
+ * auto's actions and hardware; otherwise any of this auto's actions the
+ * library lacks are added, so opening an older auto never drops one.
+ */
+export function joinedLibrary(
+  library: TeamLibrary,
+  doc: Pick<ProjectDoc, "actions" | "hardware">,
+): TeamLibrary {
+  const known = new Set((library.actions ?? []).map((action) => action.id));
+  const missing = (doc.actions ?? []).filter((action) => !known.has(action.id));
+  const actions = [...(library.actions ?? []), ...missing];
+  const hardware = library.hardware ?? doc.hardware;
+  return {
+    ...(actions.length ? { actions } : {}),
+    ...(hardware ? { hardware } : {}),
+  };
+}
+
+/** The auto as it shows: its paths, with the team's actions and hardware. */
+export function withLibrary(doc: ProjectDoc, library: TeamLibrary): ProjectDoc {
+  const merged: ProjectDoc = { ...doc };
+  delete merged.actions;
+  delete merged.hardware;
+  return {
+    ...merged,
+    ...(library.actions?.length ? { actions: library.actions } : {}),
+    ...(library.hardware ? { hardware: library.hardware } : {}),
+  };
 }
