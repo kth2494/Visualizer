@@ -6,7 +6,8 @@ const CM_PER_INCH = 2.54;
 /**
  * How far the arms stick out in front at `seconds`, in inches. Timed actions
  * run once a top-level path ends, so each one that sets a reach takes effect
- * as its path finishes; the latest one wins.
+ * as its path finishes; the latest one wins. A while-driving action's reach
+ * holds only while its segment is driven, then the arms go back.
  */
 export function reachAt(
   seconds: number,
@@ -16,6 +17,15 @@ export function reachAt(
 ): number {
   const byId = new Map(actions.map((action) => [action.id, action]));
   const reachAfter = new Map<string, number>();
+  const reachDuring = new Map<string, number>();
+  for (const segment of atomicSegments(lines)) {
+    for (const id of segment.actionsDuring ?? []) {
+      const action = byId.get(id);
+      if (action?.kind === "during" && action.reachCm !== undefined) {
+        reachDuring.set(segment.id, action.reachCm);
+      }
+    }
+  }
   for (const node of lines) {
     const segments = atomicSegments([node]);
     const last = segments.at(-1);
@@ -30,7 +40,14 @@ export function reachAt(
 
   let reachCm = 0;
   for (const event of timeline) {
-    if (event.endTime > seconds) break;
+    if (event.endTime > seconds) {
+      const driving =
+        event.type === "travel" && event.startTime <= seconds && event.lineId
+          ? reachDuring.get(event.lineId)
+          : undefined;
+      if (driving !== undefined) reachCm = driving;
+      break;
+    }
     const set =
       event.type === "travel" && event.lineId
         ? reachAfter.get(event.lineId)

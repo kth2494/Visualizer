@@ -205,28 +205,7 @@
                   "steps",
                 )}><Plus class="size-4" /> Add step</Button
             >
-            <label class="ml-auto flex w-32 flex-col gap-1">
-              <span class={labelClass}>Arms out after (cm)</span>
-              <input
-                class={fieldClass}
-                type="number"
-                min="0"
-                step="1"
-                placeholder="unchanged"
-                value={action.reachCm ?? ""}
-                oninput={(event) =>
-                  update(
-                    i,
-                    {
-                      reachCm:
-                        event.currentTarget.value === ""
-                          ? undefined
-                          : numberFrom(event.currentTarget),
-                    },
-                    "reach",
-                  )}
-              />
-            </label>
+            {@render reachField(i, action.reachCm, "Arms out after (cm)")}
             <label class="flex w-32 flex-col gap-1">
               <span class={labelClass}>Total time (ms)</span>
               <input
@@ -245,6 +224,7 @@
             </label>
           </div>
         {:else}
+          {@render reachField(i, action.reachCm, "Arms out while driving (cm)")}
           {#each [["start", "Start code"], ["stop", "Stop code"]] as const as [key, label] (key)}
             <label class="flex flex-col gap-1">
               <span class={labelClass}>{label}</span>
@@ -286,3 +266,28 @@
     </section>
   </div>
 </Modal>
+
+{#snippet reachField(i: number, reachCm: number | undefined, label: string)}
+  <label class="ml-auto flex w-32 flex-col gap-1">
+    <span class={labelClass}>{label}</span>
+    <input
+      class={fieldClass}
+      type="number"
+      min="0"
+      step="1"
+      placeholder="unchanged"
+      value={reachCm ?? ""}
+      oninput={(event) =>
+        update(
+          i,
+          {
+            reachCm:
+              event.currentTarget.value === ""
+                ? undefined
+                : numberFrom(event.currentTarget),
+          },
+          "reach",
+        )}
+    />
+  </label>
+{/snippet}

@@ -200,6 +200,7 @@ function toAction(value: unknown): ActionDef | null {
       kind: "during",
       start: raw.start,
       stop: raw.stop,
+      ...(typeof raw.reachCm === "number" ? { reachCm: raw.reachCm } : {}),
     };
   }
   if (

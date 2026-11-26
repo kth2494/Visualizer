@@ -90,7 +90,15 @@ export type ActionDef =
       /** How far the arms stick out in front once this runs, in cm; unset leaves them. */
       reachCm?: number;
     }
-  | { id: string; name: string; kind: "during"; start: string; stop: string };
+  | {
+      id: string;
+      name: string;
+      kind: "during";
+      start: string;
+      stop: string;
+      /** How far the arms stick out in front while driving, in cm; unset leaves them. */
+      reachCm?: number;
+    };
 
 /** Java text the sequential export adds around the generated OpMode. */
 export interface HardwareCode {

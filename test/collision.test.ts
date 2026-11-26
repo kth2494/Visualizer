@@ -522,3 +522,39 @@ describe("arms that stick out after an action", () => {
     expect(extent(right).maxY).toBeCloseTo(-6 + 2 / 2.54);
   });
 });
+
+describe("arms out only while driving", () => {
+  it("holds a while-driving reach for its segment, then goes back", () => {
+    const doc = {
+      ...project(
+        { x: 20, y: 72 },
+        [
+          line("first", { x: 40, y: 72 }, { actionsDuring: ["sweep"] }),
+          line("second", { x: 60, y: 72 }),
+        ],
+        [],
+      ),
+      actions: [
+        {
+          id: "sweep",
+          name: "Sweep",
+          kind: "during" as const,
+          start: "",
+          stop: "",
+          reachCm: 5.08,
+        },
+      ],
+    };
+    const { timeline } = calculatePathTime(
+      doc.startPoint,
+      doc.lines,
+      settingsOf(doc),
+      doc.sequence,
+    );
+    const [first, second] = timeline.filter((e) => e.type === "travel");
+    const at = (t: number) => reachAt(t, timeline, doc.lines, doc.actions);
+    expect(at(first.startTime)).toBeCloseTo(2);
+    expect(at((first.startTime + first.endTime) / 2)).toBeCloseTo(2);
+    expect(at(second.startTime + 0.01)).toBe(0);
+  });
+});
