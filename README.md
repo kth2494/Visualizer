@@ -1,3 +1,1 @@
-# Pedro Pathing Visualizer
-
-c3: art; ans to 1
+# Pedro Pathing Visualizer for YK Robotics
