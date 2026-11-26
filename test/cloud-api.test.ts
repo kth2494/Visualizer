@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
-import { readDoc } from "../src/cloud/binding";
+import { docUpdate, readDoc } from "../src/cloud/binding";
 import { createDefaultProject } from "../src/io";
 import { DEFAULT_ROBOT } from "./support/fixtures";
 
@@ -117,6 +117,21 @@ describe("cloud api", () => {
       request("POST", { name: "x", copyOf: "other" }),
     );
     expect(refused.status).toBe(400);
+  });
+
+  it("hands back one auto's project", async () => {
+    const doc = createDefaultProject(DEFAULT_ROBOT, "biobuzz.webp");
+    calls.getYjsDocumentAsBinaryUpdate.mockResolvedValueOnce(
+      docUpdate(doc).slice().buffer,
+    );
+    const response = await autos.GET(
+      new Request("https://x/api/autos?id=auto:1", {
+        headers: { "x-team-password": "bees" },
+      }),
+    );
+    expect((await response.json()).doc).toEqual(
+      JSON.parse(JSON.stringify(doc)),
+    );
   });
 
   it("deletes only auto rooms", async () => {

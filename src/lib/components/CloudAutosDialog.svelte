@@ -6,6 +6,7 @@
     CloudCancelled,
     copyAuto,
     createAuto,
+    fetchAuto,
     deleteAuto,
     listAutos,
     renameAuto,
@@ -16,7 +17,8 @@
   import type { ProjectFiles } from "../../state/files.svelte";
   import { currentFilePath } from "../../stores";
   import { pathStem } from "../../utils/filename";
-  import { confirmDialog, promptDialog } from "../dialog";
+  import { chooseDialog, confirmDialog, promptDialog } from "../dialog";
+  import { mirrorProject } from "../../model/mirror";
   import { withActionDefaults } from "../session/actionDefaults";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -102,13 +104,31 @@
 
   const duplicate = (auto: CloudAuto) =>
     attempt(async () => {
+      const how = await chooseDialog({
+        title: `Duplicate "${auto.name}"`,
+        message: "Copy it as it is, or flipped?",
+        choices: [
+          { value: "copy", label: "As is" },
+          { value: "leftRight", label: "Left ↔ right" },
+          { value: "upDown", label: "Up ↕ down" },
+          { value: "both", label: "Both" },
+        ],
+      });
+      if (!how) return;
+      const suffix = {
+        copy: "copy",
+        leftRight: "mirrored",
+        upDown: "flipped",
+        both: "rotated",
+      };
       const name = await promptDialog({
         title: "Duplicate cloud auto",
-        value: `${auto.name} copy`,
+        value: `${auto.name} ${suffix[how]}`,
         confirmLabel: "Duplicate",
       });
       if (!name) return;
-      await copyAuto(auto.id, name);
+      if (how === "copy") await copyAuto(auto.id, name);
+      else await createAuto(name, mirrorProject(await fetchAuto(auto.id), how));
       await refresh();
     });
 

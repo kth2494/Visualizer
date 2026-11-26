@@ -64,8 +64,8 @@ export function refused(response: Response) {
   return true;
 }
 
-async function call<T>(method: string, body?: unknown): Promise<T> {
-  const response = await fetch("/api/autos", {
+async function call<T>(method: string, body?: unknown, query = ""): Promise<T> {
+  const response = await fetch(`/api/autos${query}`, {
     method,
     headers: {
       "x-team-password": await teamPassword(),
@@ -84,6 +84,13 @@ async function call<T>(method: string, body?: unknown): Promise<T> {
 export const listAutos = () => call<CloudAuto[]>("GET");
 export const createAuto = (name: string, doc: ProjectDoc) =>
   call<{ id: string }>("POST", { name, doc });
+/** One auto's project as it is now, without joining its room. */
+export const fetchAuto = (id: string) =>
+  call<{ doc: ProjectDoc }>(
+    "GET",
+    undefined,
+    `?id=${encodeURIComponent(id)}`,
+  ).then((reply) => reply.doc);
 export const copyAuto = (id: string, name: string) =>
   call<{ id: string }>("POST", { name, copyOf: id });
 export const renameAuto = (id: string, name: string) =>

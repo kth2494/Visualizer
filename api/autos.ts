@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { docUpdate } from "../src/cloud/binding.js";
+import * as Y from "yjs";
+import { docUpdate, readDoc } from "../src/cloud/binding.js";
 import type { CloudAuto } from "../src/cloud/client";
 import type { ProjectDoc } from "../src/io";
 import {
@@ -18,8 +19,19 @@ const allowed = (request: Request) =>
 const body = (request: Request) =>
   request.json().catch(() => ({})) as Promise<Record<string, unknown>>;
 
+/** The list of autos, or with `?id=` that one auto's project as it is now. */
 export async function GET(request: Request): Promise<Response> {
   if (!allowed(request)) return unauthorized();
+  const id = new URL(request.url).searchParams.get("id");
+  if (id !== null) {
+    if (!isAutoId(id)) return json({ error: "Bad request" }, 400);
+    const ydoc = new Y.Doc();
+    Y.applyUpdate(
+      ydoc,
+      new Uint8Array(await liveblocks().getYjsDocumentAsBinaryUpdate(id)),
+    );
+    return json({ doc: readDoc(ydoc) });
+  }
   // ponytail: one page of 100 autos; page with nextCursor if the team ever has more.
   const rooms = await liveblocks().getRooms({
     limit: 100,

@@ -109,3 +109,24 @@ describe("flipping up and down", () => {
     expect(mirrorAngle(0, "upDown")).toBe(0);
   });
 });
+
+describe("flipping both ways", () => {
+  it("turns the project half a turn around the field's center", () => {
+    const doc = loadProject(fixtures[0].text);
+    const turned = mirrorProject(doc, "both");
+    expect(turned.startPoint.x).toBeCloseTo(2 * MIRROR_AXIS - doc.startPoint.x);
+    expect(turned.startPoint.y).toBeCloseTo(2 * MIRROR_AXIS - doc.startPoint.y);
+    expect(
+      sameAngle(turned.startPoint.headingDeg, doc.startPoint.headingDeg + 180),
+    ).toBe(true);
+    // Turning twice lands back, with headings a full turn off (same direction).
+    const back = mirrorProject(turned, "both");
+    expect(back.startPoint).toMatchObject({
+      x: doc.startPoint.x,
+      y: doc.startPoint.y,
+    });
+    expect(
+      sameAngle(back.startPoint.headingDeg, doc.startPoint.headingDeg),
+    ).toBe(true);
+  });
+});

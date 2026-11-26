@@ -15,18 +15,20 @@ import type {
 export const MIRROR_AXIS = FIELD_SIZE / 2;
 
 /** Left ↔ right flips across the vertical center line, up ↔ down across the horizontal one. */
-export type Flip = "leftRight" | "upDown";
+type Axis = "leftRight" | "upDown";
+/** Both flips at once turn everything half a turn around the field's center. */
+export type Flip = Axis | "both";
 
 // Rounded so 13.22 flips to 128.28, not 128.27999999999997, and back exactly.
 const across = (value: number) =>
   Math.round((2 * MIRROR_AXIS - value) * 1e6) / 1e6;
 
-export function mirrorAngle(degrees: number, flip: Flip = "leftRight"): number {
+export function mirrorAngle(degrees: number, flip: Axis = "leftRight"): number {
   if (flip === "leftRight") return 180 - degrees;
   return degrees === 0 ? 0 : -degrees;
 }
 
-function mirrorPoint<T extends BasePoint>(point: T, flip: Flip): T {
+function mirrorPoint<T extends BasePoint>(point: T, flip: Axis): T {
   return flip === "leftRight"
     ? { ...point, x: across(point.x) }
     : { ...point, y: across(point.y) };
@@ -34,7 +36,7 @@ function mirrorPoint<T extends BasePoint>(point: T, flip: Flip): T {
 
 function mirrorPiecewiseSegment(
   segment: PiecewiseHeadingSegment,
-  flip: Flip,
+  flip: Axis,
 ): PiecewiseHeadingSegment {
   const parameters = segment.parameters;
   if (!parameters) return segment;
@@ -54,7 +56,7 @@ function mirrorPiecewiseSegment(
 
 export function mirrorHeading(
   heading: Heading,
-  flip: Flip = "leftRight",
+  flip: Axis = "leftRight",
 ): Heading {
   switch (heading.type) {
     case "linear":
@@ -81,7 +83,7 @@ export function mirrorHeading(
   }
 }
 
-function mirrorPath(path: Path, flip: Flip): Path {
+function mirrorPath(path: Path, flip: Axis): Path {
   const point = <T extends BasePoint>(p: T) => mirrorPoint(p, flip);
   if (path.kind === "compound") {
     return {
@@ -106,6 +108,9 @@ export function mirrorProject(
   doc: ProjectDoc,
   flip: Flip = "leftRight",
 ): ProjectDoc {
+  if (flip === "both") {
+    return mirrorProject(mirrorProject(doc, "leftRight"), "upDown");
+  }
   const point = <T extends BasePoint>(p: T) => mirrorPoint(p, flip);
   return {
     ...doc,

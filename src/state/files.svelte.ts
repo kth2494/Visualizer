@@ -194,12 +194,13 @@ export class ProjectFiles {
       choices: [
         { value: "leftRight", label: "Left ↔ right" },
         { value: "upDown", label: "Up ↕ down" },
+        { value: "both", label: "Both" },
       ],
     });
     if (!flip) return;
     const name = await askFileName({
       title: "Duplicate mirrored",
-      value: `${pathStem(get(currentFilePath)) || "path"}_${flip === "leftRight" ? "mirrored" : "flipped"}`,
+      value: `${pathStem(get(currentFilePath)) || "path"}_${{ leftRight: "mirrored", upDown: "flipped", both: "rotated" }[flip]}`,
       confirmLabel: "Create",
     });
     if (!name) return;
