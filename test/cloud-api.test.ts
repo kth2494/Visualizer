@@ -83,7 +83,12 @@ describe("cloud api", () => {
   it("lists autos by name", async () => {
     const response = await autos.GET(request("GET"));
     expect(await response.json()).toEqual([
-      { id: "auto:1", name: "오토1", updatedAt: "2026-11-01T00:00:00.000Z" },
+      {
+        id: "auto:1",
+        name: "오토1",
+        updatedAt: "2026-11-01T00:00:00.000Z",
+        createdAt: "2026-11-01T00:00:00.000Z",
+      },
     ]);
   });
 
