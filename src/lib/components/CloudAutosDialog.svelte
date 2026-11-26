@@ -216,13 +216,15 @@
         confirmLabel: "Duplicate",
       });
       if (!name) return;
-      // The copy stays in the same folder.
-      if (how === "copy") await copyAuto(auto.id, name, auto.folder);
+      const target = await askFolder("Copy into folder", auto.folder, "Copy");
+      if (target === null) return;
+      const into = target || undefined;
+      if (how === "copy") await copyAuto(auto.id, name, into);
       else
         await createAuto(
           name,
           mirrorProject(await fetchAuto(auto.id), how),
-          auto.folder,
+          into,
         );
       await refresh();
     });
@@ -245,19 +247,27 @@
       );
     });
 
+  /** A folder path, cleaned ("" is the top), or null if dismissed. */
+  async function askFolder(
+    title: string,
+    current: string | undefined,
+    confirmLabel: string,
+  ) {
+    const existing = allFolders.filter(Boolean).sort();
+    const answer = await promptDialog({
+      title,
+      value: current ?? "",
+      hint: `${existing.length ? `Folders: ${existing.join(", ")}. ` : ""}Use / for a folder inside a folder (Red/Left); empty is the top.`,
+      confirmLabel,
+      allowEmpty: true,
+    });
+    return answer === null ? null : cleanFolder(answer);
+  }
+
   const move = (auto: CloudAuto) =>
     attempt(async () => {
-      const existing = allFolders.filter(Boolean).sort();
-      const answer = await promptDialog({
-        title: "Move to folder",
-        value: auto.folder ?? "",
-        hint: `${existing.length ? `Folders: ${existing.join(", ")}. ` : ""}Use / for a folder inside a folder (Red/Left); empty takes it out.`,
-        confirmLabel: "Move",
-        allowEmpty: true,
-      });
-      if (answer === null) return;
-      const target = cleanFolder(answer);
-      if (target === (auto.folder ?? "")) return;
+      const target = await askFolder("Move to folder", auto.folder, "Move");
+      if (target === null || target === (auto.folder ?? "")) return;
       await moveAuto(auto.id, target);
       await refresh();
     });

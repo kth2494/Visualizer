@@ -97,9 +97,23 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   await list.getByRole("button", { name: "Duplicate" }).first().click();
   await page.getByRole("button", { name: "As is" }).click();
   await page.getByRole("button", { name: "Duplicate" }).last().click();
+  await page.getByRole("button", { name: "Copy", exact: true }).click();
   await expect
     .poll(() => requests.find((r) => r.method === "POST")?.body)
     .toEqual({ name: "오토1 copy", copyOf: "auto:1" });
+  requests.length = 0;
+
+  // The copy can go into another folder.
+  await list.getByRole("button", { name: "Duplicate" }).first().click();
+  await page.getByRole("button", { name: "As is" }).click();
+  await page.getByRole("button", { name: "Duplicate" }).last().click();
+  await page
+    .getByRole("textbox", { name: "Copy into folder" })
+    .fill("Blue/Old");
+  await page.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect
+    .poll(() => requests.find((r) => r.method === "POST")?.body)
+    .toEqual({ name: "오토1 copy", copyOf: "auto:1", folder: "Blue/Old" });
   requests.length = 0;
 
   const [download] = await Promise.all([
@@ -118,6 +132,7 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   await list.getByRole("button", { name: "Duplicate" }).first().click();
   await page.getByRole("button", { name: "Both" }).click();
   await page.getByRole("button", { name: "Duplicate" }).last().click();
+  await page.getByRole("button", { name: "Copy", exact: true }).click();
   await expect
     .poll(() => requests.find((r) => r.method === "POST")?.body)
     .toMatchObject({
