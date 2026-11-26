@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { X } from "@lucide/svelte";
+  import {
+    ChevronRight,
+    Folder as FolderIcon,
+    FolderOpen,
+    X,
+  } from "@lucide/svelte";
   import { onMount } from "svelte";
   import type { CloudAutos } from "../../cloud/cloud.svelte";
   import {
@@ -383,9 +388,15 @@
           {#each trail as step, i (step.path)}
             <span class="text-body">/</span>
             {#if i === trail.length - 1}
-              <span class="font-semibold break-words text-heading"
-                >📁 {step.name}</span
+              <span
+                class="flex items-center gap-1.5 text-base font-bold break-words text-heading"
               >
+                <FolderOpen
+                  class="size-5 shrink-0 fill-primary/30 text-primary"
+                  aria-hidden="true"
+                />
+                {step.name}
+              </span>
             {:else}
               <Button
                 size="sm"
@@ -412,15 +423,32 @@
     {:else}
       <ul class="flex flex-col divide-y divide-border" aria-label="Cloud autos">
         {#each shownFolders as entry (entry.path)}
-          <li>
+          <li class="border-t-0! py-1.5">
             <button
               type="button"
-              class="flex w-full items-center gap-2 py-2 text-left text-sm font-medium text-heading hover:text-primary"
+              aria-label={`${folderName(entry.path)} (${entry.count})`}
+              class="flex w-full items-center gap-3 rounded-xl border-2 border-primary/30 bg-primary/10 px-4 py-3 text-left transition hover:border-primary hover:bg-primary/20"
               onclick={() => (folder = entry.path)}
             >
-              <span aria-hidden="true">📁</span>
-              <span class="break-words">{folderName(entry.path)}</span>
-              <span class="text-xs font-normal text-body">({entry.count})</span>
+              <FolderIcon
+                class="size-6 shrink-0 fill-primary/30 text-primary"
+                aria-hidden="true"
+              />
+              <span
+                class="min-w-0 text-base font-bold break-words text-heading"
+              >
+                {folderName(entry.path)}
+              </span>
+              <span
+                class="ml-auto shrink-0 rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary"
+              >
+                {entry.count}
+                {entry.count === 1 ? "auto" : "autos"}
+              </span>
+              <ChevronRight
+                class="size-5 shrink-0 text-primary"
+                aria-hidden="true"
+              />
             </button>
           </li>
         {/each}
