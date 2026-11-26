@@ -176,15 +176,6 @@ export function calculateVisualizationPathTime(
   baseSequence.forEach((item) => {
     visualizationSequence.push(item);
     if (item.kind === "path") {
-      const durationMs = waitAfterMs.get(item.lineId) ?? 0;
-      if (durationMs > 0) {
-        visualizationSequence.push({
-          kind: "wait",
-          id: `visualization-wait-${item.lineId}`,
-          name: "Path visualization wait",
-          durationMs,
-        });
-      }
       timedAfter.get(item.lineId)?.forEach((action, index) => {
         if (action.durationMs <= 0) return;
         visualizationSequence.push({
@@ -195,6 +186,16 @@ export function calculateVisualizationPathTime(
           action: action.name,
         });
       });
+      // After the path's actions, as the export runs it.
+      const durationMs = waitAfterMs.get(item.lineId) ?? 0;
+      if (durationMs > 0) {
+        visualizationSequence.push({
+          kind: "wait",
+          id: `visualization-wait-${item.lineId}`,
+          name: "Wait after the path",
+          durationMs,
+        });
+      }
     }
   });
 

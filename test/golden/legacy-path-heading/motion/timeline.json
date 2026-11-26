@@ -16,7 +16,7 @@
     },
     {
       "type": "wait",
-      "name": "Path visualization wait",
+      "name": "Wait after the path",
       "duration": 0.5,
       "startTime": 1.6,
       "endTime": 2.1,

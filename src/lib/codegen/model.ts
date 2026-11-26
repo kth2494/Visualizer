@@ -399,6 +399,12 @@ function buildSequence(
         command(timedExpression(action, STEP_INDENT), action.id, "after"),
       ),
     );
+    // "Wait after the path" comes last, once the path's actions have run.
+    const waitMs = run.segments.reduce(
+      (total, segment) => total + Math.max(0, Number(segment.waitAfterMs) || 0),
+      0,
+    );
+    if (waitMs > 0) steps.push({ kind: "wait", durationMs: waitMs });
   });
 
   if (steps.length === 0 && lines.length > 0) return allPaths();

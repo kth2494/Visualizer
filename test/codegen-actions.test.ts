@@ -112,3 +112,30 @@ describe("sequential export with actions", () => {
     );
   });
 });
+
+it("waits after a path once its actions have run", () => {
+  const doc = fixture("default-1.5");
+  const shoot: ActionDef = {
+    id: "shoot",
+    name: "발사",
+    kind: "timed",
+    durationMs: 0,
+    steps: [{ atMs: 0, code: "shoot();" }],
+  };
+  const lines = doc.lines.map((line, i) =>
+    i === 0 ? { ...line, waitAfterMs: 1500, actionsAfter: ["shoot"] } : line,
+  );
+  const src = generateSequentialCommandCode(
+    doc.startPoint,
+    lines,
+    "Auto",
+    doc.sequence,
+    { actions: [shoot] },
+  );
+  const follow = src.indexOf("follow(follower");
+  const action = src.indexOf("shoot();");
+  const wait = src.indexOf("waitMs(1500)");
+  expect(follow).toBeGreaterThan(0);
+  expect(action).toBeGreaterThan(follow);
+  expect(wait).toBeGreaterThan(action);
+});

@@ -36,6 +36,7 @@ public class Auto extends LinearOpMode {
     public Command autoRoutine() {
         return sequential(
             follow(follower, path1()),
+            waitMs(500),
             follow(follower, path2()),
             follow(follower, path3())
         );
