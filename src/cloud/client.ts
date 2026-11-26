@@ -8,6 +8,8 @@ export interface CloudAuto {
   updatedAt: string;
   /** ISO time it was made. */
   createdAt?: string;
+  /** The folder it is filed in; absent when in none. */
+  folder?: string;
 }
 
 const PASSWORD_KEY = "pedro_team_password";
@@ -84,8 +86,8 @@ async function call<T>(method: string, body?: unknown, query = ""): Promise<T> {
 }
 
 export const listAutos = () => call<CloudAuto[]>("GET");
-export const createAuto = (name: string, doc: ProjectDoc) =>
-  call<{ id: string }>("POST", { name, doc });
+export const createAuto = (name: string, doc: ProjectDoc, folder?: string) =>
+  call<{ id: string }>("POST", { name, doc, folder });
 /** One auto's project as it is now, without joining its room. */
 export const fetchAuto = (id: string) =>
   call<{ doc: ProjectDoc }>(
@@ -93,8 +95,11 @@ export const fetchAuto = (id: string) =>
     undefined,
     `?id=${encodeURIComponent(id)}`,
   ).then((reply) => reply.doc);
-export const copyAuto = (id: string, name: string) =>
-  call<{ id: string }>("POST", { name, copyOf: id });
+export const copyAuto = (id: string, name: string, folder?: string) =>
+  call<{ id: string }>("POST", { name, copyOf: id, folder });
+/** File an auto in `folder`, or in none when it is empty. */
+export const moveAuto = (id: string, folder: string) =>
+  call("PATCH", { id, folder });
 export const renameAuto = (id: string, name: string) =>
   call("PATCH", { id, name });
 export const deleteAuto = (id: string) => call("DELETE", { id });

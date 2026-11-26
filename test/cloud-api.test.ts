@@ -8,6 +8,7 @@ const calls = vi.hoisted(() => ({
   createRoom: vi.fn(),
   sendYjsBinaryUpdate: vi.fn(),
   deleteRoom: vi.fn(),
+  updateRoom: vi.fn(),
   getYjsDocumentAsBinaryUpdate: vi.fn(
     async () => new Uint8Array([1, 2, 3]).buffer,
   ),
@@ -29,6 +30,7 @@ vi.mock("@liveblocks/node", () => ({
     createRoom = calls.createRoom;
     sendYjsBinaryUpdate = calls.sendYjsBinaryUpdate;
     deleteRoom = calls.deleteRoom;
+    updateRoom = calls.updateRoom;
     getYjsDocumentAsBinaryUpdate = calls.getYjsDocumentAsBinaryUpdate;
     getRooms = calls.getRooms;
     prepareSession = () => ({
@@ -162,6 +164,20 @@ describe("cloud api", () => {
     expect((await response.json()).doc.actions).toEqual([shoot]);
     expect(calls.getYjsDocumentAsBinaryUpdate).toHaveBeenLastCalledWith(
       "team:library",
+    );
+  });
+
+  it("files an auto in a folder and takes it out again", async () => {
+    await autos.PATCH(request("PATCH", { id: "auto:1", folder: " Red " }));
+    expect(calls.updateRoom).toHaveBeenLastCalledWith("auto:1", {
+      metadata: { folder: "Red" },
+    });
+    await autos.PATCH(request("PATCH", { id: "auto:1", folder: "" }));
+    expect(calls.updateRoom).toHaveBeenLastCalledWith("auto:1", {
+      metadata: { folder: null },
+    });
+    expect((await autos.PATCH(request("PATCH", { id: "auto:1" }))).status).toBe(
+      400,
     );
   });
 

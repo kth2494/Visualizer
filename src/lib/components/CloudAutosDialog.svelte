@@ -7,6 +7,7 @@
     copyAuto,
     createAuto,
     fetchAuto,
+    moveAuto,
     deleteAuto,
     listAutos,
     renameAuto,
@@ -74,6 +75,19 @@
     })(),
   );
   let sorted = $derived(autos ? [...autos].sort(SORTS[sort].compare) : null);
+  const folderName = (auto: CloudAuto) => auto.folder ?? "";
+  /** Folders A → Z, then the autos in no folder; each keeps the chosen sort. */
+  let groups = $derived.by(() => {
+    if (!sorted) return [];
+    const folders = [...new Set(sorted.map(folderName))].sort((a, b) =>
+      !a ? 1 : !b ? -1 : a.localeCompare(b, undefined, { numeric: true }),
+    );
+    return folders.map((folder) => ({
+      folder,
+      autos: sorted!.filter((auto) => folderName(auto) === folder),
+    }));
+  });
+  let hasFolders = $derived(groups.some((group) => group.folder));
 
   function chooseSort(next: Sort) {
     sort = next;
@@ -173,8 +187,14 @@
         confirmLabel: "Duplicate",
       });
       if (!name) return;
-      if (how === "copy") await copyAuto(auto.id, name);
-      else await createAuto(name, mirrorProject(await fetchAuto(auto.id), how));
+      // The copy stays in the same folder.
+      if (how === "copy") await copyAuto(auto.id, name, auto.folder);
+      else
+        await createAuto(
+          name,
+          mirrorProject(await fetchAuto(auto.id), how),
+          auto.folder,
+        );
       await refresh();
     });
 
@@ -188,6 +208,23 @@
         list.map((auto, i) => ({ name: auto.name, doc: docs[i] })),
       );
       downloadBlob(zipFiles(files), "cloud-autos-java.zip");
+    });
+
+  const move = (auto: CloudAuto) =>
+    attempt(async () => {
+      const existing = groups.map((g) => g.folder).filter(Boolean);
+      const folder = await promptDialog({
+        title: "Move to folder",
+        value: auto.folder ?? "",
+        hint: existing.length
+          ? `Folders: ${existing.join(", ")}. A new name makes a new folder; empty takes it out.`
+          : "A new name makes a new folder; empty takes it out.",
+        confirmLabel: "Move",
+        allowEmpty: true,
+      });
+      if (folder === null || folder === (auto.folder ?? "")) return;
+      await moveAuto(auto.id, folder);
+      await refresh();
     });
 
   const rename = (auto: CloudAuto) =>
@@ -223,7 +260,7 @@
   {isOpen}
   titleId="cloud-autos-title"
   onClose={() => (isOpen = false)}
-  panelClass="flex max-h-[90vh] w-full max-w-lg flex-col mx-4"
+  panelClass="flex max-h-[90vh] w-full max-w-3xl flex-col mx-4"
 >
   <div class="flex items-center gap-3 border-b border-border px-5 py-3">
     <h2
@@ -277,9 +314,9 @@
 
     {#if autos?.length}
       <label class="flex items-center gap-2 self-end">
-        <span class={labelClass}>Sort by</span>
+        <span class={[labelClass, "whitespace-nowrap"]}>Sort by</span>
         <select
-          class={fieldClass}
+          class={[fieldClass, "w-auto"]}
           value={sort}
           onchange={(event) => chooseSort(event.currentTarget.value as Sort)}
         >
@@ -296,32 +333,46 @@
       <p class="text-sm text-body">No cloud autos yet.</p>
     {:else}
       <ul class="flex flex-col divide-y divide-border" aria-label="Cloud autos">
-        {#each sorted as auto (auto.id)}
-          <li class="flex items-center gap-2 py-2">
-            <div class="mr-auto min-w-0">
-              <p class="truncate text-sm font-medium text-heading">
-                {auto.name}
-                {#if cloud.current?.id === auto.id}
-                  <span class="text-xs font-normal text-primary">(open)</span>
-                {/if}
-              </p>
-              <p class="text-xs text-body">
-                {new Date(auto.updatedAt).toLocaleString()}
-              </p>
-            </div>
-            <Button size="sm" disabled={busy} onclick={() => open(auto)}>
-              Open
-            </Button>
-            <Button size="sm" disabled={busy} onclick={() => duplicate(auto)}>
-              Duplicate
-            </Button>
-            <Button size="sm" disabled={busy} onclick={() => rename(auto)}>
-              Rename
-            </Button>
-            <Button size="sm" disabled={busy} onclick={() => remove(auto)}>
-              Delete
-            </Button>
-          </li>
+        {#each groups as group (group.folder)}
+          {#if hasFolders}
+            <li class="pt-3 pb-1">
+              <h3 class="text-xs font-semibold text-heading">
+                {group.folder ? `📁 ${group.folder}` : "No folder"}
+                <span class="font-normal text-body">({group.autos.length})</span
+                >
+              </h3>
+            </li>
+          {/if}
+          {#each group.autos as auto (auto.id)}
+            <li class="flex items-center gap-2 py-2">
+              <div class="mr-auto min-w-0">
+                <p class="text-sm font-medium break-words text-heading">
+                  {auto.name}
+                  {#if cloud.current?.id === auto.id}
+                    <span class="text-xs font-normal text-primary">(open)</span>
+                  {/if}
+                </p>
+                <p class="text-xs text-body">
+                  {new Date(auto.updatedAt).toLocaleString()}
+                </p>
+              </div>
+              <Button size="sm" disabled={busy} onclick={() => open(auto)}>
+                Open
+              </Button>
+              <Button size="sm" disabled={busy} onclick={() => duplicate(auto)}>
+                Duplicate
+              </Button>
+              <Button size="sm" disabled={busy} onclick={() => move(auto)}>
+                Folder
+              </Button>
+              <Button size="sm" disabled={busy} onclick={() => rename(auto)}>
+                Rename
+              </Button>
+              <Button size="sm" disabled={busy} onclick={() => remove(auto)}>
+                Delete
+              </Button>
+            </li>
+          {/each}
         {/each}
       </ul>
     {/if}

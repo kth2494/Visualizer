@@ -20,7 +20,9 @@
     shown?.kind === "prompt"
       ? value.trim()
         ? (shown.validate?.(value.trim()) ?? null)
-        : "Enter a name."
+        : shown.allowEmpty
+          ? null
+          : "Enter a name."
       : null,
   );
 

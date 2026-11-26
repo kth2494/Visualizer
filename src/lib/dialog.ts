@@ -21,6 +21,8 @@ export interface PromptRequest extends BaseRequest {
   hint?: string;
   /** A reason the value can't be used, or null when it can. */
   validate?: (value: string) => string | null;
+  /** Accept an empty answer (resolves to ""). */
+  allowEmpty?: boolean;
   resolve: (value: string | null) => void;
 }
 

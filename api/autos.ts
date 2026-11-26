@@ -61,6 +61,9 @@ export async function GET(request: Request): Promise<Response> {
         room.lastConnectionAt ?? room.createdAt,
       ).toISOString(),
       createdAt: new Date(room.createdAt).toISOString(),
+      ...(typeof room.metadata.folder === "string"
+        ? { folder: room.metadata.folder }
+        : {}),
     })),
   );
 }
@@ -71,7 +74,7 @@ export async function GET(request: Request): Promise<Response> {
  */
 export async function POST(request: Request): Promise<Response> {
   if (!allowed(request)) return unauthorized();
-  const { name, doc, copyOf } = await body(request);
+  const { name, doc, copyOf, folder } = await body(request);
   const clean = cleanName(name);
   const project = doc as ProjectDoc | undefined;
   const source = isAutoId(copyOf) ? copyOf : null;
@@ -89,7 +92,10 @@ export async function POST(request: Request): Promise<Response> {
   const id = `${AUTO_PREFIX}${randomUUID()}`;
   await client.createRoom(id, {
     defaultAccesses: [],
-    metadata: { name: clean },
+    metadata: {
+      name: clean,
+      ...(cleanName(folder) ? { folder: cleanName(folder)! } : {}),
+    },
   });
   await client.sendYjsBinaryUpdate(id, content);
   return json({ id });
@@ -97,10 +103,17 @@ export async function POST(request: Request): Promise<Response> {
 
 export async function PATCH(request: Request): Promise<Response> {
   if (!allowed(request)) return unauthorized();
-  const { id, name } = await body(request);
+  const { id, name, folder } = await body(request);
   const clean = cleanName(name);
-  if (!isAutoId(id) || !clean) return json({ error: "Bad request" }, 400);
-  await liveblocks().updateRoom(id, { metadata: { name: clean } });
+  if (!isAutoId(id) || (name !== undefined && !clean)) {
+    return json({ error: "Bad request" }, 400);
+  }
+  // An empty folder takes the auto out of its folder.
+  const metadata: Record<string, string | null> = {};
+  if (clean) metadata.name = clean;
+  if (folder !== undefined) metadata.folder = cleanName(folder);
+  if (!Object.keys(metadata).length) return json({ error: "Bad request" }, 400);
+  await liveblocks().updateRoom(id, { metadata });
   return json({ id });
 }
 
