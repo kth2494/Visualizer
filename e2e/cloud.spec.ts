@@ -150,3 +150,91 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
       doc: { lines: expect.any(Array) },
     });
 });
+
+test("folders nest, and export takes the folder you are in", async ({
+  page,
+}) => {
+  const at = "2026-11-01T00:00:00Z";
+  const autos = [
+    {
+      id: "auto:a",
+      name: "Alpha",
+      updatedAt: at,
+      createdAt: at,
+      folder: "Red",
+    },
+    {
+      id: "auto:b",
+      name: "Bravo",
+      updatedAt: at,
+      createdAt: at,
+      folder: "Red/Left",
+    },
+    { id: "auto:c", name: "Charlie", updatedAt: at, createdAt: at },
+  ];
+  const doc = {
+    startPoint: { x: 10, y: 20, headingDeg: 90 },
+    lines: [],
+    shapes: [],
+    sequence: [],
+    fieldPoints: [],
+    activePaths: [],
+  };
+  await page.route(/\/api\/autos/, (route) =>
+    route.fulfill({
+      json: new URL(route.request().url()).searchParams.has("id")
+        ? { doc }
+        : autos,
+    }),
+  );
+  await page.goto("/");
+  await page.evaluate(() => localStorage.setItem("pedro_team_password", "x"));
+  await page.getByRole("button", { name: "File" }).click();
+  await page.getByRole("menuitem", { name: "Cloud autos…" }).click();
+
+  const list = page.getByRole("list", { name: "Cloud autos" });
+  const exported = async (label: string) => {
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: label }).click(),
+    ]);
+    const zip = (await (await download.createReadStream()).toArray())
+      .map((chunk) => chunk.toString("latin1"))
+      .join("");
+    return {
+      file: download.suggestedFilename(),
+      autos: ["Alpha", "Bravo", "Charlie"].filter((n) =>
+        zip.includes(`${n}.java`),
+      ),
+    };
+  };
+
+  await expect(list.getByRole("button", { name: "Red (2)" })).toBeVisible();
+  expect(await exported("Export all as Java (.zip)")).toEqual({
+    file: "cloud-autos-java.zip",
+    autos: ["Alpha", "Bravo", "Charlie"],
+  });
+
+  await list.getByRole("button", { name: "Red (2)" }).click();
+  await expect(list.getByRole("button", { name: "Left (1)" })).toBeVisible();
+  await expect(list).toContainText("Alpha");
+  await expect(list).not.toContainText("Bravo");
+  expect(await exported("Export this folder as Java (.zip)")).toEqual({
+    file: "Red-java.zip",
+    autos: ["Alpha", "Bravo"],
+  });
+
+  await list.getByRole("button", { name: "Left (1)" }).click();
+  await expect(list).toContainText("Bravo");
+  expect(await exported("Export this folder as Java (.zip)")).toEqual({
+    file: "Left-java.zip",
+    autos: ["Bravo"],
+  });
+
+  // The trail goes back up one level at a time.
+  await page
+    .getByRole("navigation", { name: "Folder path" })
+    .getByRole("button", { name: "Red" })
+    .click();
+  await expect(list).toContainText("Alpha");
+});

@@ -21,6 +21,12 @@
   import { chooseDialog, confirmDialog, promptDialog } from "../dialog";
   import { mirrorProject } from "../../model/mirror";
   import { javaFilesFor } from "../../cloud/exportJava";
+  import {
+    cleanFolder,
+    folderName,
+    isWithin,
+    subfolders,
+  } from "../../cloud/folders";
   import { zipFiles } from "../../utils/zip";
   import { downloadBlob } from "../../utils/download";
   import { withActionDefaults } from "../session/actionDefaults";
@@ -75,25 +81,29 @@
     })(),
   );
   let sorted = $derived(autos ? [...autos].sort(SORTS[sort].compare) : null);
-  /** The folder being looked in, like a file browser; "" is the top. */
+  /** The folder being looked in, as a path like "Red/Left"; "" is the top. */
   let folder = $state("");
   const folderOf = (auto: CloudAuto) => auto.folder ?? "";
-  let folders = $derived(
-    [...new Set((autos ?? []).map(folderOf))]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
-  );
-  /** Folders show only at the top, each with how many autos it holds. */
+  let allFolders = $derived([...new Set((autos ?? []).map(folderOf))]);
+  /** The folders right inside this one, each with every auto below it. */
   let shownFolders = $derived(
-    folder
-      ? []
-      : folders.map((name) => ({
-          name,
-          count: (autos ?? []).filter((auto) => folderOf(auto) === name).length,
-        })),
+    subfolders(allFolders, folder).map((path) => ({
+      path,
+      count: (autos ?? []).filter((auto) => isWithin(folderOf(auto), path))
+        .length,
+    })),
   );
   let shown = $derived(
     (sorted ?? []).filter((auto) => folderOf(auto) === folder),
+  );
+  /** Each step of the path, for the clickable trail above the list. */
+  let trail = $derived(
+    folder
+      ? folder.split("/").map((part, i, parts) => ({
+          name: part,
+          path: parts.slice(0, i + 1).join("/"),
+        }))
+      : [],
   );
 
   const newFolder = () =>
@@ -104,7 +114,8 @@
         hint: "It stays once an auto is created or moved into it.",
         confirmLabel: "Create",
       });
-      if (name) folder = name;
+      const path = name && cleanFolder(`${folder}/${name}`);
+      if (path) folder = path;
     });
 
   function chooseSort(next: Sort) {
@@ -219,29 +230,35 @@
   /** Every auto as its sequential command OpMode, in one zip for TeamCode/auto. */
   const exportAll = () =>
     attempt(async () => {
-      if (!autos?.length) return;
-      const list = autos;
+      // Here and in every folder below; at the top, everything.
+      const list = (autos ?? []).filter((auto) =>
+        isWithin(folderOf(auto), folder),
+      );
+      if (!list.length) return;
       const docs = await Promise.all(list.map((auto) => fetchAuto(auto.id)));
       const files = javaFilesFor(
         list.map((auto, i) => ({ name: auto.name, doc: docs[i] })),
       );
-      downloadBlob(zipFiles(files), "cloud-autos-java.zip");
+      downloadBlob(
+        zipFiles(files),
+        `${folder ? folderName(folder) : "cloud-autos"}-java.zip`,
+      );
     });
 
   const move = (auto: CloudAuto) =>
     attempt(async () => {
-      const existing = folders;
-      const folder = await promptDialog({
+      const existing = allFolders.filter(Boolean).sort();
+      const answer = await promptDialog({
         title: "Move to folder",
         value: auto.folder ?? "",
-        hint: existing.length
-          ? `Folders: ${existing.join(", ")}. A new name makes a new folder; empty takes it out.`
-          : "A new name makes a new folder; empty takes it out.",
+        hint: `${existing.length ? `Folders: ${existing.join(", ")}. ` : ""}Use / for a folder inside a folder (Red/Left); empty takes it out.`,
         confirmLabel: "Move",
         allowEmpty: true,
       });
-      if (folder === null || folder === (auto.folder ?? "")) return;
-      await moveAuto(auto.id, folder);
+      if (answer === null) return;
+      const target = cleanFolder(answer);
+      if (target === (auto.folder ?? "")) return;
+      await moveAuto(auto.id, target);
       await refresh();
     });
 
@@ -322,7 +339,9 @@
         New empty
       </Button>
       <Button size="sm" disabled={busy || !autos?.length} onclick={exportAll}>
-        Export all as Java (.zip)
+        {folder
+          ? "Export this folder as Java (.zip)"
+          : "Export all as Java (.zip)"}
       </Button>
     </div>
 
@@ -346,14 +365,29 @@
     {/if}
 
     <div class="flex items-center gap-2 text-sm">
-      {#if folder}
-        <Button size="sm" variant="ghost" onclick={() => (folder = "")}>
-          ← Cloud autos
-        </Button>
-        <span class="font-semibold break-words text-heading">📁 {folder}</span>
-      {:else}
-        <span class="font-semibold text-heading">Cloud autos</span>
-      {/if}
+      <nav aria-label="Folder path" class="flex flex-wrap items-center gap-1">
+        {#if folder}
+          <Button size="sm" variant="ghost" onclick={() => (folder = "")}>
+            ← Cloud autos
+          </Button>
+          {#each trail as step, i (step.path)}
+            <span class="text-body">/</span>
+            {#if i === trail.length - 1}
+              <span class="font-semibold break-words text-heading"
+                >📁 {step.name}</span
+              >
+            {:else}
+              <Button
+                size="sm"
+                variant="ghost"
+                onclick={() => (folder = step.path)}>{step.name}</Button
+              >
+            {/if}
+          {/each}
+        {:else}
+          <span class="font-semibold text-heading">Cloud autos</span>
+        {/if}
+      </nav>
       <Button size="sm" class="ml-auto" disabled={busy} onclick={newFolder}>
         New folder
       </Button>
@@ -367,15 +401,15 @@
       </p>
     {:else}
       <ul class="flex flex-col divide-y divide-border" aria-label="Cloud autos">
-        {#each shownFolders as entry (entry.name)}
+        {#each shownFolders as entry (entry.path)}
           <li>
             <button
               type="button"
               class="flex w-full items-center gap-2 py-2 text-left text-sm font-medium text-heading hover:text-primary"
-              onclick={() => (folder = entry.name)}
+              onclick={() => (folder = entry.path)}
             >
               <span aria-hidden="true">📁</span>
-              <span class="break-words">{entry.name}</span>
+              <span class="break-words">{folderName(entry.path)}</span>
               <span class="text-xs font-normal text-body">({entry.count})</span>
             </button>
           </li>
