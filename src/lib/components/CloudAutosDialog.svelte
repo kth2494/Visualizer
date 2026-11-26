@@ -427,7 +427,7 @@
             <button
               type="button"
               aria-label={`${folderName(entry.path)} (${entry.count})`}
-              class="flex w-full items-center gap-3 rounded-xl border-2 border-primary/30 bg-primary/10 px-4 py-3 text-left transition hover:border-primary hover:bg-primary/20"
+              class="flex w-full items-center gap-3 rounded-xl border-2 border-primary/30 px-4 py-3 text-left transition hover:border-primary"
               onclick={() => (folder = entry.path)}
             >
               <FolderIcon
