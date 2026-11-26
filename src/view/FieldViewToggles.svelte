@@ -6,6 +6,7 @@
     LockOpen,
     Magnet,
     Ruler,
+    TriangleAlert,
   } from "@lucide/svelte";
   import IconButton from "../lib/components/ui/IconButton.svelte";
   import { surfaceClass } from "../lib/components/ui/styles";
@@ -14,6 +15,7 @@
     protractorLockToRobot,
     showGrid,
     showProtractor,
+    showCollisions,
     showRuler,
     snapToGrid,
   } from "../stores";
@@ -76,4 +78,11 @@
       {#if $protractorLockToRobot}<Lock />{:else}<LockOpen />{/if}
     </IconButton>
   {/if}
+  <IconButton
+    label={$showCollisions ? "Collision warnings on" : "Collision warnings off"}
+    active={$showCollisions}
+    onclick={() => showCollisions.update((shown) => !shown)}
+  >
+    <TriangleAlert />
+  </IconButton>
 </div>

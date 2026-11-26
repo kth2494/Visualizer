@@ -17,6 +17,27 @@ function parse(project: object) {
 }
 
 describe("parseProject", () => {
+  it("keeps how far an action puts the arms out", () => {
+    const result = parse({
+      ...minimal,
+      actions: [
+        {
+          id: "a",
+          name: "Servo out",
+          kind: "timed",
+          steps: [],
+          durationMs: 0,
+          reachCm: 6,
+        },
+        { id: "b", name: "Other", kind: "timed", steps: [], durationMs: 0 },
+      ],
+    });
+    if (!result.ok) throw new Error(result.error);
+    expect(result.doc.actions?.map((a) => "reachCm" in a && a.reachCm)).toEqual(
+      [6, false],
+    );
+  });
+
   it("rejects text that isn't JSON", () => {
     expect(parseProject("{not json", DEFAULT_ROBOT)).toMatchObject({
       ok: false,

@@ -9,7 +9,7 @@
     type PointAddress,
   } from "../model/commands";
   import { atomicSegments } from "../utils/pathTraversal";
-  import { robotFootprint } from "../model/collision";
+  import { armPolygons, robotFootprint } from "../model/collision";
   import { generateGhostPathPoints, generateOnionLayers } from "../model/sweep";
   import { robotPoseAt } from "../sim/pose";
   import { smoothStrokePreview } from "../lib/pen/strokeFitting";
@@ -32,6 +32,7 @@
   import Obstacles from "./scene/Obstacles.svelte";
   import { polylinePath } from "./scene/svgPath";
   import {
+    ARM_COLOR,
     COLLISION_COLOR,
     FIELD_POINT_COLOR,
     GHOST_COLOR,
@@ -585,6 +586,16 @@
               selectedId={editor.selectedLineId}
               {onSegmentDown}
             />
+            {#each armPolygons(playback.robotPose, { ...doc.robot, safetyMargin: 0 }, playback.reach) as arm, index (index)}
+              <path
+                d={polylinePath(arm, true)}
+                fill={ARM_COLOR}
+                fill-opacity={0.55}
+                stroke={ARM_COLOR}
+                stroke-width={0.3}
+                pointer-events="none"
+              />
+            {/each}
             {#each collisionMarks as mark, index (index)}
               <path
                 d={polylinePath(mark.trace)}

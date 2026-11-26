@@ -8,6 +8,7 @@ import type {
   StartPose,
   TimelineEvent,
 } from "../types";
+import { reachAt } from "../sim/reach";
 import { getRobotCorners, polygonsOverlap } from "../utils/geometry";
 import { segmentHeadingAt } from "../utils/headingInterpolation";
 import { getAngularDifference, shortestRotation } from "../utils/math";
@@ -61,6 +62,41 @@ export function robotFootprint(pose: Pose, robot: Footprint): BasePoint[] {
   );
 }
 
+/** Width of each arm that sticks out in front, in inches (2 cm). */
+export const ARM_WIDTH = 2 / 2.54;
+
+/**
+ * The two arms at the front corners, `reach` inches long, as polygons.
+ * They run along the robot's sides, so the margin grows them like the body.
+ */
+export function armPolygons(
+  pose: Pose,
+  robot: Footprint,
+  reach: number,
+): BasePoint[][] {
+  if (!(reach > 0)) return [];
+  const margin = Math.max(0, robot.safetyMargin || 0);
+  const radians = (pose.heading * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const forward = robot.rLength / 2 + reach / 2;
+  const side = robot.rWidth / 2 - ARM_WIDTH / 2;
+  return [side, -side].map((left) =>
+    getRobotCorners(
+      pose.x + cos * forward - sin * left,
+      pose.y + sin * forward + cos * left,
+      pose.heading,
+      reach + 2 * margin,
+      ARM_WIDTH + 2 * margin,
+    ),
+  );
+}
+
+/** The body and any arms: everything that can touch an obstacle. */
+function partsAt(pose: Pose, robot: Footprint, reach: number): BasePoint[][] {
+  return [robotFootprint(pose, robot), ...armPolygons(pose, robot, reach)];
+}
+
 /** Every interval of `timeline` where the robot touches an obstacle or leaves the field. */
 export function findCollisions(
   doc: ProjectDoc,
@@ -84,9 +120,10 @@ export function findCollisions(
   for (const event of timeline) {
     const motion = motionOf(event, doc, segments, segmentById, step);
     if (!motion) continue;
+    const reach = reachAt(event.startTime, timeline, doc.lines, doc.actions);
 
     for (const sample of samplesOf(motion, angleStep)) {
-      const footprint = robotFootprint(sample.pose, doc.robot);
+      const footprint = partsAt(sample.pose, doc.robot, reach);
       const before = previous?.motion === motion ? previous.sample : null;
 
       for (const target of targets) {
@@ -99,6 +136,7 @@ export function findCollisions(
               motion,
               target,
               doc.robot,
+              reach,
               before.u,
               sample.u,
             );
@@ -114,7 +152,7 @@ export function findCollisions(
           continue;
         }
         const entry = before
-          ? boundary(motion, target, doc.robot, sample.u, before.u)
+          ? boundary(motion, target, doc.robot, reach, sample.u, before.u)
           : sample.u;
         const start = motion.timeAt(entry);
         const collision: Collision = {
@@ -136,15 +174,18 @@ export function findCollisions(
 
 interface Target {
   obstacle: Obstacle;
-  hits(footprint: BasePoint[]): boolean;
+  /** Whether any of the robot's parts touches it. */
+  hits(parts: BasePoint[][]): boolean;
 }
 
 function targetsOf(shapes: Shape[]): Target[] {
   const wall: Target = {
     obstacle: { kind: "wall" },
-    hits: (footprint) =>
-      footprint.some(
-        ({ x, y }) => x < 0 || x > FIELD_SIZE || y < 0 || y > FIELD_SIZE,
+    hits: (parts) =>
+      parts.some((part) =>
+        part.some(
+          ({ x, y }) => x < 0 || x > FIELD_SIZE || y < 0 || y > FIELD_SIZE,
+        ),
       ),
   };
 
@@ -154,9 +195,12 @@ function targetsOf(shapes: Shape[]): Target[] {
       const bounds = boundsOf(shape.vertices);
       return {
         obstacle: { kind: "shape", shapeId: shape.id },
-        hits: (footprint) =>
-          boundsOverlap(bounds, boundsOf(footprint)) &&
-          polygonsOverlap(footprint, shape.vertices),
+        hits: (parts) =>
+          parts.some(
+            (part) =>
+              boundsOverlap(bounds, boundsOf(part)) &&
+              polygonsOverlap(part, shape.vertices),
+          ),
       };
     });
 
@@ -251,12 +295,13 @@ function boundary(
   motion: Motion,
   target: Target,
   robot: Footprint,
+  reach: number,
   inside: number,
   outside: number,
 ): number {
   for (let round = 0; round < BOUNDARY_ROUNDS; round++) {
     const middle = (inside + outside) / 2;
-    if (target.hits(robotFootprint(motion.poseAt(middle), robot))) {
+    if (target.hits(partsAt(motion.poseAt(middle), robot, reach))) {
       inside = middle;
     } else {
       outside = middle;

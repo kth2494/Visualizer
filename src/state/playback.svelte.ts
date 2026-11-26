@@ -9,6 +9,9 @@ import { robotPoseAt, type RobotPose } from "../sim/pose";
 import { createAnimationController } from "../utils/animation";
 import { calculateVisualizationPathTime } from "../utils/timeCalculator";
 import { actionLabelAt } from "../sim/actionLabel";
+import { reachAt } from "../sim/reach";
+import { fromStore } from "svelte/store";
+import { showCollisions } from "../stores";
 import type { Overlays } from "./overlays.svelte";
 import type { ProjectStore } from "./project.svelte";
 
@@ -73,6 +76,16 @@ export class Playback {
       this.#project.doc.actions,
     ),
   );
+  /** How far the arms stick out in front now, in inches. */
+  reach = $derived.by(() =>
+    reachAt(
+      this.seconds,
+      this.prediction.timeline,
+      this.#project.doc.lines,
+      this.#project.doc.actions,
+    ),
+  );
+  #showCollisions = fromStore(showCollisions);
   /** Each overlay's robot; one that finishes early waits at its end. */
   overlayPoses: RobotPose[] = $derived.by(() =>
     this.#overlays.items.map((overlay, index) => {
@@ -89,14 +102,19 @@ export class Playback {
 
   /** Where the open project's robot hits an obstacle or wall, when obstacles are on. */
   collisions: Collision[] = $derived.by(() =>
-    this.#getSettings().experimentalFeatures?.obstacles ? this.#hits : [],
+    this.#getSettings().experimentalFeatures?.obstacles &&
+    this.#showCollisions.current
+      ? this.#hits
+      : [],
   );
   #hits: Collision[] = $derived.by(() =>
     findCollisions(this.#project.doc, this.prediction.timeline),
   );
   /** Always checked, obstacles setting or not: a wall hit is never wanted. */
   warnings: string[] = $derived.by(() =>
-    collisionWarnings(this.#project.doc, this.#hits),
+    this.#showCollisions.current
+      ? collisionWarnings(this.#project.doc, this.#hits)
+      : [],
   );
 
   constructor(

@@ -13,6 +13,9 @@ import {
   LINE_WIDTH,
 } from "../../config/defaults";
 import { robotPoseAt } from "../../sim/pose";
+import { reachAt } from "../../sim/reach";
+import { armPolygons } from "../../model/collision";
+import { ARM_COLOR } from "../../view/scene/colors";
 import { exportAsGif } from "../../utils/gifExporter";
 import { pathStem } from "../../utils/filename";
 import { flattenToAtomicSegments } from "../../utils/pathTraversal";
@@ -124,6 +127,29 @@ export async function renderPathGif(request: GifRequest): Promise<Blob> {
           path.lines,
           path.settings,
         );
+        const reach = reachAt(
+          Math.min(seconds, timeline.totalTime),
+          timeline.timeline,
+          path.lines,
+          path.actions,
+        );
+        context.save();
+        context.globalAlpha = (path.opacity ?? 1) * 0.55;
+        context.fillStyle = ARM_COLOR;
+        for (const arm of armPolygons(
+          pose,
+          { ...path.settings, safetyMargin: 0 },
+          reach,
+        )) {
+          context.beginPath();
+          arm.forEach((p, i) =>
+            i === 0
+              ? context.moveTo(toX(p.x), toY(p.y))
+              : context.lineTo(toX(p.x), toY(p.y)),
+          );
+          context.fill();
+        }
+        context.restore();
         drawRobot(
           context,
           robotImage,

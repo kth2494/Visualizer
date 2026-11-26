@@ -217,6 +217,7 @@ function toAction(value: unknown): ActionDef | null {
       kind: "timed",
       durationMs: raw.durationMs,
       steps,
+      ...(typeof raw.reachCm === "number" ? { reachCm: raw.reachCm } : {}),
     };
   }
   return null;

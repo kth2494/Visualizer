@@ -206,6 +206,28 @@
                 )}><Plus class="size-4" /> Add step</Button
             >
             <label class="ml-auto flex w-32 flex-col gap-1">
+              <span class={labelClass}>Arms out after (cm)</span>
+              <input
+                class={fieldClass}
+                type="number"
+                min="0"
+                step="1"
+                placeholder="unchanged"
+                value={action.reachCm ?? ""}
+                oninput={(event) =>
+                  update(
+                    i,
+                    {
+                      reachCm:
+                        event.currentTarget.value === ""
+                          ? undefined
+                          : numberFrom(event.currentTarget),
+                    },
+                    "reach",
+                  )}
+              />
+            </label>
+            <label class="flex w-32 flex-col gap-1">
               <span class={labelClass}>Total time (ms)</span>
               <input
                 class={fieldClass}

@@ -30,3 +30,22 @@ export const snapToGrid = writable(true);
 
 // Multiple paths visualization stores
 export const activePaths = writable<string[]>([]);
+
+const COLLISIONS_KEY = "pedro_show_collisions";
+/** Whether collision warnings show; remembered per browser. */
+export const showCollisions = writable(
+  (() => {
+    try {
+      return localStorage.getItem(COLLISIONS_KEY) !== "false";
+    } catch {
+      return true;
+    }
+  })(),
+);
+showCollisions.subscribe((shown) => {
+  try {
+    localStorage.setItem(COLLISIONS_KEY, String(shown));
+  } catch {
+    // Private windows: back to shown next time.
+  }
+});

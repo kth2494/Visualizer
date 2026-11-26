@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../src/config/defaults";
 import type { ProjectDoc } from "../src/io";
 import {
+  armPolygons,
   collisionWarnings,
   findCollisions,
   robotFootprint,
   type Collision,
 } from "../src/model/collision";
 import { robotPoseAt } from "../src/sim/pose";
+import { reachAt } from "../src/sim/reach";
 import type { AtomicPath, BasePoint, Shape } from "../src/types";
 import {
   calculatePathTime,
@@ -458,5 +460,65 @@ describe("collision warnings for export", () => {
       "Path 1 hits the field wall",
       "The robot hits the field wall while turning or waiting",
     ]);
+  });
+});
+
+describe("arms that stick out after an action", () => {
+  const servoOut = {
+    id: "out",
+    name: "Servo out",
+    kind: "timed" as const,
+    steps: [],
+    durationMs: 500,
+    reachCm: 6,
+  };
+  // Just ahead of the left arm once it is out; clear of the body.
+  const doc = {
+    ...project(
+      { x: 20, y: 72 },
+      [line("drive", { x: 40, y: 72 }, { actionsAfter: ["out"] })],
+      [box("post", 51.5, 76, 60, 77)],
+    ),
+    actions: [servoOut],
+  };
+  const timelineOf = (d: ProjectDoc) =>
+    calculateVisualizationPathTime(
+      d.startPoint,
+      d.lines,
+      settingsOf(d),
+      d.sequence,
+      d.actions,
+    ).timeline;
+
+  it("reaches out once its path ends", () => {
+    const timeline = timelineOf(doc);
+    const end = timeline.find((e) => e.type === "travel")!.endTime;
+    expect(reachAt(end - 0.01, timeline, doc.lines, doc.actions)).toBe(0);
+    expect(reachAt(end, timeline, doc.lines, doc.actions)).toBeCloseTo(
+      6 / 2.54,
+    );
+  });
+
+  it("counts the arms as touching what they reach", () => {
+    expect(findCollisions(doc, timelineOf(doc))).toEqual([
+      expect.objectContaining({ obstacle: { kind: "shape", shapeId: "post" } }),
+    ]);
+    const without = { ...doc, actions: [{ ...servoOut, reachCm: 0 }] };
+    expect(findCollisions(without, timelineOf(without))).toEqual([]);
+  });
+
+  it("draws one arm along each side of the front", () => {
+    const [left, right] = armPolygons(
+      { x: 0, y: 0, heading: 0 },
+      { ...ROBOT, safetyMargin: 0 },
+      2,
+    );
+    expect(extent(left)).toEqual({
+      minX: expect.closeTo(9),
+      maxX: expect.closeTo(11),
+      minY: expect.closeTo(6 - 2 / 2.54),
+      maxY: expect.closeTo(6),
+    });
+    expect(extent(right).maxY).toBeCloseTo(-6 + 2 / 2.54);
   });
 });

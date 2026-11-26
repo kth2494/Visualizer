@@ -87,6 +87,8 @@ export type ActionDef =
       kind: "timed";
       steps: TimedStep[];
       durationMs: number;
+      /** How far the arms stick out in front once this runs, in cm; unset leaves them. */
+      reachCm?: number;
     }
   | { id: string; name: string; kind: "during"; start: string; stop: string };
 
