@@ -75,19 +75,37 @@
     })(),
   );
   let sorted = $derived(autos ? [...autos].sort(SORTS[sort].compare) : null);
-  const folderName = (auto: CloudAuto) => auto.folder ?? "";
-  /** Folders A → Z, then the autos in no folder; each keeps the chosen sort. */
-  let groups = $derived.by(() => {
-    if (!sorted) return [];
-    const folders = [...new Set(sorted.map(folderName))].sort((a, b) =>
-      !a ? 1 : !b ? -1 : a.localeCompare(b, undefined, { numeric: true }),
-    );
-    return folders.map((folder) => ({
-      folder,
-      autos: sorted!.filter((auto) => folderName(auto) === folder),
-    }));
-  });
-  let hasFolders = $derived(groups.some((group) => group.folder));
+  /** The folder being looked in, like a file browser; "" is the top. */
+  let folder = $state("");
+  const folderOf = (auto: CloudAuto) => auto.folder ?? "";
+  let folders = $derived(
+    [...new Set((autos ?? []).map(folderOf))]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+  );
+  /** Folders show only at the top, each with how many autos it holds. */
+  let shownFolders = $derived(
+    folder
+      ? []
+      : folders.map((name) => ({
+          name,
+          count: (autos ?? []).filter((auto) => folderOf(auto) === name).length,
+        })),
+  );
+  let shown = $derived(
+    (sorted ?? []).filter((auto) => folderOf(auto) === folder),
+  );
+
+  const newFolder = () =>
+    attempt(async () => {
+      const name = await promptDialog({
+        title: "New folder",
+        value: "",
+        hint: "It stays once an auto is created or moved into it.",
+        confirmLabel: "Create",
+      });
+      if (name) folder = name;
+    });
 
   function chooseSort(next: Sort) {
     sort = next;
@@ -153,7 +171,7 @@
       });
       if (!name) return;
       const content = doc();
-      const { id } = await createAuto(name, content);
+      const { id } = await createAuto(name, content, folder || undefined);
       // The new room already holds this project, so nothing is lost by leaving it.
       project.markSaved();
       await cloud.open(id, name, () => {
@@ -212,7 +230,7 @@
 
   const move = (auto: CloudAuto) =>
     attempt(async () => {
-      const existing = groups.map((g) => g.folder).filter(Boolean);
+      const existing = folders;
       const folder = await promptDialog({
         title: "Move to folder",
         value: auto.folder ?? "",
@@ -327,52 +345,70 @@
       </label>
     {/if}
 
+    <div class="flex items-center gap-2 text-sm">
+      {#if folder}
+        <Button size="sm" variant="ghost" onclick={() => (folder = "")}>
+          ← Cloud autos
+        </Button>
+        <span class="font-semibold break-words text-heading">📁 {folder}</span>
+      {:else}
+        <span class="font-semibold text-heading">Cloud autos</span>
+      {/if}
+      <Button size="sm" class="ml-auto" disabled={busy} onclick={newFolder}>
+        New folder
+      </Button>
+    </div>
+
     {#if autos === null || sorted === null}
       <p class="text-sm text-body">{busy ? "Loading…" : ""}</p>
-    {:else if autos.length === 0}
-      <p class="text-sm text-body">No cloud autos yet.</p>
+    {:else if shownFolders.length === 0 && shown.length === 0}
+      <p class="text-sm text-body">
+        {folder ? "This folder is empty." : "No cloud autos yet."}
+      </p>
     {:else}
       <ul class="flex flex-col divide-y divide-border" aria-label="Cloud autos">
-        {#each groups as group (group.folder)}
-          {#if hasFolders}
-            <li class="pt-3 pb-1">
-              <h3 class="text-xs font-semibold text-heading">
-                {group.folder ? `📁 ${group.folder}` : "No folder"}
-                <span class="font-normal text-body">({group.autos.length})</span
-                >
-              </h3>
-            </li>
-          {/if}
-          {#each group.autos as auto (auto.id)}
-            <li class="flex items-center gap-2 py-2">
-              <div class="mr-auto min-w-0">
-                <p class="text-sm font-medium break-words text-heading">
-                  {auto.name}
-                  {#if cloud.current?.id === auto.id}
-                    <span class="text-xs font-normal text-primary">(open)</span>
-                  {/if}
-                </p>
-                <p class="text-xs text-body">
-                  {new Date(auto.updatedAt).toLocaleString()}
-                </p>
-              </div>
-              <Button size="sm" disabled={busy} onclick={() => open(auto)}>
-                Open
-              </Button>
-              <Button size="sm" disabled={busy} onclick={() => duplicate(auto)}>
-                Duplicate
-              </Button>
-              <Button size="sm" disabled={busy} onclick={() => move(auto)}>
-                Folder
-              </Button>
-              <Button size="sm" disabled={busy} onclick={() => rename(auto)}>
-                Rename
-              </Button>
-              <Button size="sm" disabled={busy} onclick={() => remove(auto)}>
-                Delete
-              </Button>
-            </li>
-          {/each}
+        {#each shownFolders as entry (entry.name)}
+          <li>
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 py-2 text-left text-sm font-medium text-heading hover:text-primary"
+              onclick={() => (folder = entry.name)}
+            >
+              <span aria-hidden="true">📁</span>
+              <span class="break-words">{entry.name}</span>
+              <span class="text-xs font-normal text-body">({entry.count})</span>
+            </button>
+          </li>
+        {/each}
+        {#each shown as auto (auto.id)}
+          <li class="flex items-center gap-2 py-2">
+            <div class="mr-auto min-w-0">
+              <p class="text-sm font-medium break-words text-heading">
+                {auto.name}
+                {#if cloud.current?.id === auto.id}
+                  <span class="text-xs font-normal text-primary">(open)</span>
+                {/if}
+              </p>
+              <p class="text-xs text-body">
+                {new Date(auto.updatedAt).toLocaleString()}
+              </p>
+            </div>
+            <Button size="sm" disabled={busy} onclick={() => open(auto)}>
+              Open
+            </Button>
+            <Button size="sm" disabled={busy} onclick={() => duplicate(auto)}>
+              Duplicate
+            </Button>
+            <Button size="sm" disabled={busy} onclick={() => move(auto)}>
+              Folder
+            </Button>
+            <Button size="sm" disabled={busy} onclick={() => rename(auto)}>
+              Rename
+            </Button>
+            <Button size="sm" disabled={busy} onclick={() => remove(auto)}>
+              Delete
+            </Button>
+          </li>
         {/each}
       </ul>
     {/if}

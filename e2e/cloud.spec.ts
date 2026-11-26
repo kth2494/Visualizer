@@ -79,24 +79,27 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   expect(await names()).toEqual(["오토1", "오토10"]);
   expect(requests[0]).toMatchObject({ method: "GET", password: "bees" });
 
-  // Filing 오토10 in a folder groups it under a heading, folders first.
+  // Filed in a folder, 오토10 shows only once you go into the folder.
   await list.getByRole("button", { name: "Folder" }).nth(1).click();
   await page.getByRole("textbox", { name: "Move to folder" }).fill("Red");
   await page.getByRole("button", { name: "Move" }).click();
-  await expect(list.getByRole("heading", { name: /Red/ })).toBeVisible();
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
     id: "auto:3",
     folder: "Red",
   });
-  expect(await names()).toEqual(["오토10", "오토1"]);
-  await expect(list.getByRole("heading", { name: /No folder/ })).toBeVisible();
+  await expect(list.getByRole("button", { name: /Red/ })).toBeVisible();
+  expect(await names()).toEqual(["오토1"]);
+  await list.getByRole("button", { name: /Red/ }).click();
+  expect(await names()).toEqual(["오토10"]);
+  await page.getByRole("button", { name: "← Cloud autos" }).click();
+  expect(await names()).toEqual(["오토1"]);
 
   await list.getByRole("button", { name: "Duplicate" }).first().click();
   await page.getByRole("button", { name: "As is" }).click();
   await page.getByRole("button", { name: "Duplicate" }).last().click();
   await expect
     .poll(() => requests.find((r) => r.method === "POST")?.body)
-    .toEqual({ name: "오토10 copy", copyOf: "auto:3", folder: "Red" });
+    .toEqual({ name: "오토1 copy", copyOf: "auto:1" });
   requests.length = 0;
 
   const [download] = await Promise.all([
@@ -118,8 +121,7 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   await expect
     .poll(() => requests.find((r) => r.method === "POST")?.body)
     .toMatchObject({
-      name: "오토10 rotated",
-      folder: "Red",
+      name: "오토1 rotated",
       doc: { startPoint: { x: 131.5, y: 121.5, headingDeg: -90 } },
     });
   requests.length = 0;
@@ -128,13 +130,23 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
   await page.getByRole("button", { name: "Delete" }).last().click();
   await expect(page.getByText("No cloud autos yet.")).toBeVisible();
   expect(requests.find((r) => r.method === "DELETE")?.body).toEqual({
-    id: "auto:3",
+    id: "auto:1",
   });
+
+  // A new folder is entered right away; what is made there lands in it.
+  await page.getByRole("button", { name: "New folder" }).click();
+  await page.getByRole("textbox", { name: "New folder" }).fill("Blue");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByText("This folder is empty.")).toBeVisible();
 
   await page.getByRole("button", { name: "Upload current" }).click();
   await page.getByRole("textbox", { name: "New cloud auto" }).fill("오토2");
   await page.getByRole("button", { name: "Create" }).click();
   await expect
     .poll(() => requests.find((r) => r.method === "POST")?.body)
-    .toMatchObject({ name: "오토2", doc: { lines: expect.any(Array) } });
+    .toMatchObject({
+      name: "오토2",
+      folder: "Blue",
+      doc: { lines: expect.any(Array) },
+    });
 });
