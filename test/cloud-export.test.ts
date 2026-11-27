@@ -21,7 +21,7 @@ describe("exporting every cloud auto", () => {
       "RedLeft.java",
       // Same name on a case-insensitive disk (Windows, macOS), so numbered.
       "Redleft2.java",
-      "AutoPath.java",
+      "오토.java",
     ]);
     expect(files[1].text).toContain("public class Redleft2");
     expect(files[0].text).toContain(

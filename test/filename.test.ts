@@ -32,5 +32,7 @@ describe("project file names", () => {
   it("names code classes without the extension", () => {
     expect(toClassName("myAuto.pp.json", "Fallback")).toBe("MyAuto");
     expect(toClassName("2024Auto.pp", "Fallback")).toBe("Path2024Auto");
+    expect(toClassName("레드 왼쪽 ①", "Fallback")).toBe("레드왼쪽");
+    expect(toClassName("2번 오토", "Fallback")).toBe("Path2번오토");
   });
 });

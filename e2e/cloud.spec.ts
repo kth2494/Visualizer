@@ -121,11 +121,11 @@ test("lists, deletes and uploads cloud autos", async ({ page }) => {
     page.getByRole("button", { name: "Export all as Java (.zip)" }).click(),
   ]);
   expect(download.suggestedFilename()).toBe("cloud-autos-java.zip");
-  const zip = (await (await download.createReadStream()).toArray())
-    .map((chunk) => chunk.toString("latin1"))
-    .join("");
-  expect(zip).toContain("Path1.java");
-  expect(zip).toContain("public class Path1");
+  const zip = Buffer.concat(
+    await (await download.createReadStream()).toArray(),
+  ).toString("utf8");
+  expect(zip).toContain("오토1.java");
+  expect(zip).toContain("public class 오토1");
   requests.length = 0;
 
   // Flipped both ways: the start lands across the field's center, turned around.

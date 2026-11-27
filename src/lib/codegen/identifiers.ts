@@ -72,14 +72,18 @@ const RESERVED = new Set([
   "null",
 ]);
 
+// Java and Kotlin take any Unicode letter, so 한글 names stay.
+const NOT_IDENTIFIER = /[^\p{L}\p{Nd}]/gu;
+const STARTS_WITH_DIGIT = /^\p{Nd}/u;
+
 /** Strips everything that cannot appear in an identifier. */
 export function sanitizeIdentifier(
   input: string | undefined,
   fallback: string,
 ): string {
-  const cleaned = (input || "").replace(/[^a-zA-Z0-9]/g, "");
+  const cleaned = (input || "").replace(NOT_IDENTIFIER, "");
   if (!cleaned) return fallback;
-  if (/^[0-9]/.test(cleaned)) return `${fallback}${cleaned}`;
+  if (STARTS_WITH_DIGIT.test(cleaned)) return `${fallback}${cleaned}`;
   return cleaned;
 }
 
@@ -97,10 +101,12 @@ export function toClassName(
   input: string | null | undefined,
   fallback: string,
 ): string {
-  const cleaned = pathStem(input).replace(/[^a-zA-Z0-9]/g, "");
+  const cleaned = pathStem(input).replace(NOT_IDENTIFIER, "");
   if (!cleaned) return fallback;
   // A class name cannot start with a digit, so "2024Auto.pp.json" -> "Path2024Auto".
-  const name = pascalCase(/^[0-9]/.test(cleaned) ? `Path${cleaned}` : cleaned);
+  const name = pascalCase(
+    STARTS_WITH_DIGIT.test(cleaned) ? `Path${cleaned}` : cleaned,
+  );
   return RESERVED.has(name.toLowerCase()) ? `${name}Path` : name;
 }
 
