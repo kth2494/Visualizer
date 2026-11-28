@@ -9,7 +9,7 @@ once, together with `RobotActions.java` from the Visualizer
   It also hands a saved routine back, for **Load from robot** in the Visualizer.
 - `PedroRoutine.java` rebuilds the paths with the same Pedro calls the
   sequential export writes.
-- `PedroRoutineRun.java` is the "Pedro Routine (sent)" OpMode: pick a routine
+- `PedroRoutineRun.java` is the "기리고차 경로 실행" OpMode: pick a routine
   with D-pad up/down during Init.
 
 Needs Pedro 3, `com.pedropathing.ivy:core` and `:pedro` 1.1.1, and

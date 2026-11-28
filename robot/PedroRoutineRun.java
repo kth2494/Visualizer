@@ -18,7 +18,7 @@ import static com.pedropathing.ivy.Scheduler.schedule;
  * Runs a routine sent from the Visualizer. During Init, pick one with D-pad
  * up/down; it is checked right away and will not start if anything is wrong.
  */
-@Autonomous(name = "Pedro Routine (sent)", group = "Pedro")
+@Autonomous(name = "기리고차 경로 실행", group = "Pedro")
 public class PedroRoutineRun extends LinearOpMode {
 
     @Override

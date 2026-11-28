@@ -137,7 +137,7 @@
       if (!result.ok) throw new Error(result.error || "the robot refused it");
       status = {
         ok: true,
-        text: `Sent "${result.name}". On the Driver Station run "Pedro Routine (sent)".`,
+        text: `Sent "${result.name}". On the Driver Station run "기리고차 경로 실행".`,
       };
     } catch (error) {
       status = {

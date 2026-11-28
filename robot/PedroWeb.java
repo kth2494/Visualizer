@@ -176,7 +176,7 @@ public final class PedroWeb {
         html.append("</ul><form method=\"post\" action=\"/pedro/routine\" enctype=\"multipart/form-data\">"
                 + "<p>Routine file from the Visualizer: <input type=\"file\" name=\"file\" accept=\".json\"> "
                 + "<button type=\"submit\">Upload</button></p></form>"
-                + "<p><small>Run it from the Driver Station: Pedro Routine (sent).</small></p></body></html>");
+                + "<p><small>Run it from the Driver Station: 기리고차 경로 실행.</small></p></body></html>");
         return html.toString();
     }
 
